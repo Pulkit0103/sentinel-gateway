@@ -65,14 +65,14 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 6 — API Keys
+## Phase 6 — API Keys ✅
 **Branch:** `feature/api-keys`
 
-- [ ] `X-API-Key` header authentication
-- [ ] PostgreSQL persistence: clientId, tenantId, key hash, status, scopes, timestamps
-- [ ] Never store raw key; show only on creation
-- [ ] States: ACTIVE, REVOKED, EXPIRED
-- [ ] Tests: valid, revoked, expired, wrong key
+- [x] `X-API-Key` header authentication
+- [x] R2DBC persistence (H2 in-memory dev/test; swap to PostgreSQL R2DBC in prod): clientId, tenantId, key hash, status, scopes, timestamps
+- [x] Never store raw key; show only on creation (SHA-256 hash stored)
+- [x] States: ACTIVE, REVOKED, EXPIRED
+- [x] Tests: valid, revoked, expired, wrong key, missing scope → 403
 
 ---
 
