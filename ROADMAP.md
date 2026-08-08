@@ -43,12 +43,13 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 4 — JWT Identity Model
+## Phase 4 — JWT Identity Model ✅
 **Branch:** `feature/jwt-identity`
 
-- [ ] `AuthenticatedPrincipal`: userId, tenantId, roles, scopes, clientId, authenticationType
-- [ ] Extracted from validated JWT only (no arbitrary header trust)
-- [ ] Security documentation
+- [x] `AuthenticatedPrincipal`: userId, tenantId, roles, scopes, clientId, authenticationType
+- [x] `JwtPrincipalExtractor`: Keycloak realm_access.roles + generic roles + scope/scp claims
+- [x] JwtHeadersFilter updated: X-User-Id, X-Tenant-Id, X-User-Roles propagated from verified token only
+- [x] Security documentation (ADR-003)
 
 ---
 
