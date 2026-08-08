@@ -51,10 +51,10 @@ public class HmacVerificationFilter implements WebFilter {
 
     private static final Logger log = LoggerFactory.getLogger(HmacVerificationFilter.class);
 
-    static final String HEADER_CLIENT_ID = "X-Client-Id";
-    static final String HEADER_TIMESTAMP = "X-Timestamp";
-    static final String HEADER_NONCE     = "X-Nonce";
-    static final String HEADER_SIGNATURE = "X-Signature";
+    public static final String HEADER_CLIENT_ID = "X-Client-Id";
+    public static final String HEADER_TIMESTAMP = "X-Timestamp";
+    public static final String HEADER_NONCE     = "X-Nonce";
+    public static final String HEADER_SIGNATURE = "X-Signature";
 
     private final HmacSigningConfig config;
     private final HmacSigner signer;
