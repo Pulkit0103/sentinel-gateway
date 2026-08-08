@@ -7,6 +7,11 @@ spring:
   main:
     web-application-type: reactive
   cloud:
+    gateway:
+      httpclient:
+        # Global HTTP client timeouts; per-route sentinel.resilience.timeout-ms overrides the response timeout.
+        connect-timeout: 3000      # 3 s to establish TCP connection
+        response-timeout: 30000ms  # 30 s global response deadline (reduced per route via filter)
     discovery:
       client:
         simple:
@@ -197,6 +202,29 @@ sentinel:
         required-scopes: []
         tenant-required: false
         rate-limit-policy: DEFAULT
+
+  resilience:
+    enabled: true  # set to false to disable all resilience filters globally
+    retry:
+      enabled: true
+      attempts: 2           # retries after the initial attempt; total = attempts+1
+      safe-methods: [GET, HEAD]
+    circuit-breaker:
+      enabled: true
+
+# ─── Resilience4j Circuit Breaker Defaults ────────────────────────────────────
+# Each route gets a circuit breaker named {routeId}-cb.
+# Override per-route via resilience4j.circuitbreaker.instances.{name}.*.
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        failureRateThreshold: 50   # open when ≥50% of last 20 calls fail
+        waitDurationInOpenState: 30000   # ms to stay OPEN before going HALF_OPEN
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
 
 logging:
   level:
