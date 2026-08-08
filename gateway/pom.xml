@@ -51,6 +51,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Redis reactive client — rate limiting token bucket backing store -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
