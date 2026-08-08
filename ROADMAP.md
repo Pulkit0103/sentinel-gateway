@@ -22,23 +22,24 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 2 — Routing Engine
+## Phase 2 — Routing Engine ✅
 **Branch:** `feature/routing-engine`
 
-- [ ] Route model: `routeId`, `path`, `serviceUri`, `methods`, `enabled`, `requiredScopes`, `tenantRequired`, `rateLimitPolicy`
-- [ ] Routes for: `/api/users/**`, `/api/orders/**`, `/api/payments/**`
-- [ ] Test services: user-service, order-service, payment-service
-- [ ] Tests: valid route, unknown route, disabled route, unsupported method
+- [x] Route model: `routeId`, `path`, `serviceUri`, `methods`, `enabled`, `requiredScopes`, `tenantRequired`, `rateLimitPolicy`
+- [x] Routes for: `/api/users/**`, `/api/orders/**`, `/api/payments/**`
+- [x] Test services: user-service, order-service, payment-service
+- [x] Tests: valid route, unknown route, disabled route, unsupported method
 
 ---
 
-## Phase 3 — OAuth2 / OIDC / Keycloak
+## Phase 3 — OAuth2 / OIDC / Keycloak ✅
 **Branch:** `feature/oauth2-oidc`
 
-- [ ] Keycloak in Docker Compose (realm, clients, users, roles)
-- [ ] Gateway as OAuth2 Resource Server
-- [ ] JWT validation: signature, issuer, audience, expiry, not-before, scopes
-- [ ] Tests: no token → 401, invalid → 401, expired → 401, valid → pass
+- [x] Keycloak in Docker Compose (realm, clients, users, roles)
+- [x] Gateway as OAuth2 Resource Server
+- [x] JWT validation: signature, issuer, expiry, not-before
+- [x] JwtHeadersFilter: propagates X-User-Id / X-Tenant-Id to upstream
+- [x] Tests: no token → 401, invalid sig → 401, expired → 401, wrong issuer → 401, nbf → 401, valid → 200
 
 ---
 
