@@ -6,6 +6,23 @@ spring:
     name: sentinel-gateway
   main:
     web-application-type: reactive
+  cloud:
+    discovery:
+      client:
+        simple:
+          # Static service instances for local dev / Docker Compose.
+          # In Kubernetes these are replaced by DNS-backed service entries
+          # auto-populated by spring-cloud-starter-kubernetes-client-all.
+          # Instance URIs accept env-var overrides for Docker Compose.
+          instances:
+            hello-service:
+              - uri: ${HELLO_SERVICE_URL:http://localhost:8081}
+            user-service:
+              - uri: ${USER_SERVICE_URL:http://localhost:8082}
+            order-service:
+              - uri: ${ORDER_SERVICE_URL:http://localhost:8083}
+            payment-service:
+              - uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
   autoconfigure:
     # 1. GatewayRedisAutoConfiguration — we supply our own rate limiter bean.
     # 2. KafkaAutoConfiguration — we configure Kafka manually only when
@@ -136,7 +153,7 @@ sentinel:
     routes:
       - route-id: hello-service
         path: /api/hello/**
-        service-uri: ${HELLO_SERVICE_URL:http://localhost:8081}
+        service-uri: lb://hello-service
         methods: [GET]
         enabled: true
         required-scopes: []
@@ -145,7 +162,7 @@ sentinel:
 
       - route-id: user-service
         path: /api/users/**
-        service-uri: ${USER_SERVICE_URL:http://localhost:8082}
+        service-uri: lb://user-service
         methods: [GET, POST, PUT, PATCH, DELETE]
         enabled: true
         required-scopes: []
@@ -154,7 +171,7 @@ sentinel:
 
       - route-id: order-service
         path: /api/orders/**
-        service-uri: ${ORDER_SERVICE_URL:http://localhost:8083}
+        service-uri: lb://order-service
         methods: [GET, POST, PUT, PATCH, DELETE]
         enabled: true
         required-scopes: []
@@ -163,7 +180,7 @@ sentinel:
 
       - route-id: payment-service
         path: /api/payments/**
-        service-uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
+        service-uri: lb://payment-service
         methods: [GET, POST]
         enabled: true
         required-scopes: []

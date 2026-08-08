@@ -22,6 +22,12 @@
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
 
+        <!-- Client-side load balancer — enables lb:// URI resolution via DiscoveryClient -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
         <!-- Actuator for health, metrics, info endpoints -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
