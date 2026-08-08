@@ -6,12 +6,23 @@ spring:
     name: sentinel-gateway
   main:
     web-application-type: reactive
+  autoconfigure:
+    # Exclude Spring Cloud Gateway's built-in Redis rate limiter auto-configuration.
+    # We implement our own fixed-window rate limiter (SentinelRedisRateLimiter).
+    # This also prevents BeanDefinitionOverrideException and ConfigurationService
+    # dependency failures in non-gateway test contexts.
+    exclude: org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
   r2dbc:
     # In-memory H2 for local dev — override R2DBC_URL with PostgreSQL in prod/Docker
     url: ${R2DBC_URL:r2dbc:h2:mem:///sentinel;DB_CLOSE_DELAY=-1}
   sql:
     init:
       mode: always
+  data:
+    redis:
+      # Override REDIS_HOST / REDIS_PORT for Docker/K8s; defaults to localhost dev instance
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   security:
     oauth2:
       resourceserver:
@@ -29,6 +40,12 @@ management:
     health:
       show-details: always
       show-components: always
+  health:
+    # Redis is used for rate limiting only; rate limiting fails open when Redis is down.
+    # Excluding Redis from health rollup prevents an unavailable Redis from marking
+    # the gateway DOWN — the gateway can still serve traffic with rate limiting disabled.
+    redis:
+      enabled: false
   info:
     env:
       enabled: true
@@ -48,6 +65,17 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  rate-limit:
+    enabled: false  # set to true when Redis is available (Docker/K8s)
+    policies:
+      ANONYMOUS:
+        requests-per-minute: 100
+      USER:
+        requests-per-minute: 1000
+      PREMIUM:
+        requests-per-minute: 10000
+      DEFAULT:
+        requests-per-minute: 1000
   security:
     jwt:
       # Token issuer validated against every incoming JWT's `iss` claim.
