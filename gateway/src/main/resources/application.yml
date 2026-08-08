@@ -7,11 +7,12 @@ spring:
   main:
     web-application-type: reactive
   autoconfigure:
-    # Exclude Spring Cloud Gateway's built-in Redis rate limiter auto-configuration.
-    # We implement our own fixed-window rate limiter (SentinelRedisRateLimiter).
-    # This also prevents BeanDefinitionOverrideException and ConfigurationService
-    # dependency failures in non-gateway test contexts.
-    exclude: org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
+    # 1. GatewayRedisAutoConfiguration — we supply our own rate limiter bean.
+    # 2. KafkaAutoConfiguration — we configure Kafka manually only when
+    #    sentinel.audit.kafka.enabled=true so Kafka absence never fails the context.
+    exclude:
+      - org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
   r2dbc:
     # In-memory H2 for local dev — override R2DBC_URL with PostgreSQL in prod/Docker
     url: ${R2DBC_URL:r2dbc:h2:mem:///sentinel;DB_CLOSE_DELAY=-1}
@@ -65,6 +66,11 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  audit:
+    kafka:
+      enabled: false  # set to true when Kafka is available (Docker/K8s)
+      topic: sentinel.audit.requests
+
   threat-detection:
     enabled: false  # set to true to enable WAF-style pattern detection
     log-threshold: 25    # score >= this → LOG (pass with warning)
