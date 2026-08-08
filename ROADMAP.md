@@ -126,13 +126,13 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 12 — Threat Detection
+## Phase 12 — Threat Detection ✅
 **Branch:** `feature/threat-detection`
 
-- [ ] Pattern detection: path traversal, SQLi, XSS, command injection
-- [ ] Behavioral: excessive auth failures, suspicious rates, blocked IPs
-- [ ] Risk scoring (0–100+) with configurable thresholds
-- [ ] Actions: ALLOW / LOG / BLOCK / BLOCK+ALERT
+- [x] Pattern detection: path traversal, SQLi, XSS, command injection
+- [x] Behavioral: excessive auth failures, suspicious rates, blocked IPs
+- [x] Risk scoring (0–100+) with configurable thresholds
+- [x] Actions: ALLOW / LOG / BLOCK / BLOCK+ALERT
 
 ---
 
