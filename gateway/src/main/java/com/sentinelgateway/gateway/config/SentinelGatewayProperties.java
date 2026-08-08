@@ -4,21 +4,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * Sentinel Gateway application properties, bound from the {@code sentinel.gateway.*} namespace.
- * Sensitive values (passwords, secrets) are never placed here — use environment variables
- * or a secrets manager for those.
+ * Top-level Sentinel Gateway application properties.
+ *
+ * Route-specific configuration has moved to
+ * {@link com.sentinelgateway.gateway.routing.RouteDefinitionProperties}.
+ *
+ * This class retains gateway-level settings that don't belong to any
+ * specific subsystem (e.g., global timeouts, admin settings in later phases).
  */
 @Component
 @ConfigurationProperties(prefix = "sentinel.gateway")
 public class SentinelGatewayProperties {
 
-    private String helloServiceUrl = "http://localhost:8081";
-
-    public String getHelloServiceUrl() {
-        return helloServiceUrl;
-    }
-
-    public void setHelloServiceUrl(String helloServiceUrl) {
-        this.helloServiceUrl = helloServiceUrl;
-    }
+    // Placeholder for future gateway-level settings.
+    // Route definitions are in RouteDefinitionProperties (sentinel.gateway.routes[*]).
 }
