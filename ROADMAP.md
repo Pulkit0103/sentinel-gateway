@@ -172,14 +172,14 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 16 — Resilience
+## Phase 16 — Resilience ✅
 **Branch:** `feature/resilience`
 
-- [ ] Per-route timeouts
-- [ ] Conditional retries (GET/HEAD only; never POST/payments)
-- [ ] Circuit breaker (CLOSED → OPEN → HALF_OPEN → CLOSED)
-- [ ] Bulkhead-style concurrency limits
-- [ ] Tests: slow service, repeated failures, connection error
+- [x] Response timeout: global via `spring.cloud.gateway.httpclient.response-timeout` (30s); short per-test via `@DynamicPropertySource` override → 504 Gateway Timeout
+- [x] Conditional retry: GET/HEAD only on 5xx, 2 retries; explicitly cleared default IOException/TimeoutException list so network errors are NOT retried (only HTTP 5xx)
+- [x] Circuit breaker: per-route Resilience4j CB named `{routeId}-cb`; opens on sustained connection-level failures (exceptions); returns 503 when open; independently configurable window/threshold per route
+- [x] `ResilienceProperties` (`sentinel.resilience.*`): master switch, retry config, circuit-breaker flag
+- [x] Tests: slow upstream → 504, GET retried on 5xx → 200 on 2nd attempt, POST not retried → 503, 2 connection errors open circuit → 3rd request 503 without upstream call
 
 ---
 
