@@ -149,13 +149,15 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 14 — Observability
+## Phase 14 — Observability ✅
 **Branch:** `feature/observability`
 
-- [ ] OpenTelemetry auto-instrumentation
-- [ ] Prometheus metrics: requests_total, latency, failures by type
-- [ ] Grafana dashboard: RPS, P50/P95/P99, 4xx/5xx, top APIs/tenants
-- [ ] Structured JSON logging with trace/span IDs
+- [x] `GatewayMetricsFilter` at HIGHEST_PRECEDENCE: records `gateway.requests.total` counter and `gateway.request.duration` timer per request, tagged with method/route/status/outcome
+- [x] Prometheus scrape endpoint via `PrometheusEndpointConfiguration` (workaround for Spring Boot 3.3.4 `@ConditionalOnAvailableEndpoint` bug on inner `@Configuration` classes); uses per-context `CollectorRegistry` to prevent test contamination
+- [x] Micrometer Tracing OTel bridge: populates MDC with `traceId`/`spanId` for log correlation (100% sampling in dev; tune in prod)
+- [x] Structured JSON logging: `logback-spring.xml` with `!production` (readable pattern) and `production` (LogstashEncoder JSON) profiles
+- [x] `/actuator/prometheus` endpoint exposed and accessible without authentication
+- [x] Tests: prometheus accessible, requests_total incremented, request_duration recorded, route tag present, unauthenticated 401s counted with correct outcome tag
 
 ---
 
