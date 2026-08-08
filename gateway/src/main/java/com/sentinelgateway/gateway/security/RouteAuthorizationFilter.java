@@ -1,5 +1,6 @@
 package com.sentinelgateway.gateway.security;
 
+import com.sentinelgateway.gateway.apikey.ApiKeyAuthentication;
 import com.sentinelgateway.gateway.routing.RouteRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,7 @@ import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -65,14 +67,11 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
         List<String> requiredScopes = routeDef.get().requiredScopes();
 
         // Build Mono<Boolean> = "is the caller authorized?"
-        // defaultIfEmpty(false) handles the edge case where there's no JWT in context.
+        // defaultIfEmpty(false) handles the edge case where there's no authentication in context.
         // Then flatMap calls chain.filter() exactly once — avoids double-subscription.
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
-                .filter(auth -> auth instanceof JwtAuthenticationToken)
-                .cast(JwtAuthenticationToken.class)
-                .map(JwtAuthenticationToken::getToken)
-                .map(principalExtractor::extract)
+                .flatMap(auth -> extractPrincipal(auth))
                 .map(principal -> isAuthorized(principal, requiredScopes))
                 .defaultIfEmpty(false)
                 .flatMap(authorized -> {
@@ -85,8 +84,18 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
                 });
     }
 
+    private Mono<AuthenticatedPrincipal> extractPrincipal(Authentication auth) {
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            return Mono.just(principalExtractor.extract(jwtAuth.getToken()));
+        }
+        if (auth instanceof ApiKeyAuthentication apiKeyAuth) {
+            return Mono.just(apiKeyAuth.getPrincipal());
+        }
+        return Mono.empty();
+    }
+
     private boolean isAuthorized(AuthenticatedPrincipal principal, List<String> requiredScopes) {
-        Set<String> effective = new HashSet<>(principal.scopes()); // direct JWT scopes
+        Set<String> effective = new HashSet<>(principal.scopes()); // direct scopes from credential
         effective.addAll(RolePermissions.effectivePermissionNames(principal.roles())); // role-derived
         return effective.containsAll(requiredScopes);
     }

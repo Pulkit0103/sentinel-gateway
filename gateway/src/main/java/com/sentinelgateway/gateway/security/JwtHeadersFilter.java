@@ -1,9 +1,11 @@
 package com.sentinelgateway.gateway.security;
 
+import com.sentinelgateway.gateway.apikey.ApiKeyAuthentication;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -12,24 +14,19 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Propagates verified JWT identity claims as trusted headers to upstream services.
+ * Propagates verified identity claims as trusted headers to upstream services.
  *
- * Runs after Spring Security has validated the JWT; the principal fields are
- * extracted by {@link JwtPrincipalExtractor} from the verified token only.
- * Upstream services must accept these headers ONLY from the gateway — never
- * from external callers — to prevent identity spoofing.
+ * Supports both JWT (JwtAuthenticationToken) and API key (ApiKeyAuthentication) auth.
+ * Headers are always derived from the verified credential — never from raw request headers.
  *
  * Headers propagated:
- *   X-User-Id    — JWT {@code sub} claim
- *   X-Tenant-Id  — custom {@code tenant_id} claim (if present)
- *   X-User-Roles — comma-separated roles (realm_access.roles or roles claim)
+ *   X-User-Id    — userId from authenticated principal
+ *   X-Tenant-Id  — tenantId (if present)
+ *   X-User-Roles — comma-separated roles (if any)
  *
- * IMPLEMENTATION NOTE: do NOT use switchIfEmpty() after the flatMap chain.
- * chain.filter() returns Mono<Void> which always completes "empty" (no item
- * emitted), so switchIfEmpty() would fire a second chain.filter() call, causing
- * double-subscription on the response body ("Rejecting additional inbound
- * receiver"). Instead, build a Mono<ServerWebExchange> first and then call
- * chain.filter() exactly once via flatMap.
+ * REACTOR SAFETY: uses defaultIfEmpty(exchange).flatMap(chain::filter)
+ * not switchIfEmpty — Mono<Void> always completes empty, so switchIfEmpty would
+ * call chain.filter() twice, causing double-subscription on the response body.
  */
 @Component
 public class JwtHeadersFilter implements GlobalFilter, Ordered {
@@ -44,10 +41,7 @@ public class JwtHeadersFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
-                .filter(auth -> auth instanceof JwtAuthenticationToken)
-                .cast(JwtAuthenticationToken.class)
-                .map(JwtAuthenticationToken::getToken)
-                .map(principalExtractor::extract)
+                .flatMap(auth -> extractPrincipal(auth, principalExtractor))
                 .map(principal -> {
                     ServerHttpRequest.Builder req = exchange.getRequest().mutate()
                             .header("X-User-Id", principal.userId());
@@ -63,6 +57,17 @@ public class JwtHeadersFilter implements GlobalFilter, Ordered {
                 })
                 .defaultIfEmpty(exchange)
                 .flatMap(chain::filter);
+    }
+
+    static Mono<AuthenticatedPrincipal> extractPrincipal(Authentication auth,
+                                                          JwtPrincipalExtractor extractor) {
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            return Mono.just(extractor.extract(jwtAuth.getToken()));
+        }
+        if (auth instanceof ApiKeyAuthentication apiKeyAuth) {
+            return Mono.just(apiKeyAuth.getPrincipal());
+        }
+        return Mono.empty();
     }
 
     @Override
