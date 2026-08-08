@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -20,6 +21,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
  * WireMock stubs all downstream services. {@code @DynamicPropertySource} starts
  * WireMock BEFORE the Spring context is created so the dynamic port is available
  * for property binding — the same pattern used with Testcontainers.
+ *
+ * Security is active; all routing tests use {@code mockJwt()} so that security
+ * passes and routing behaviour (not auth) is what's under test. JWT auth scenarios
+ * are covered separately in {@code JwtAuthenticationTest}.
  *
  * Covers the four Phase 2 acceptance criteria:
  *   1. Valid route → proxied response
@@ -36,6 +41,11 @@ class GatewayRoutingIntegrationTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    /** Returns a WebTestClient pre-configured with a mock JWT so security passes. */
+    private WebTestClient authed() {
+        return webTestClient.mutateWith(SecurityMockServerConfigurers.mockJwt());
+    }
+
     @DynamicPropertySource
     static void wiremockProperties(DynamicPropertyRegistry registry) {
         wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
@@ -43,6 +53,13 @@ class GatewayRoutingIntegrationTest {
         registerStubs();
 
         String base = "http://localhost:" + wireMock.port();
+
+        // JWKS URI — mockJwt() bypasses JWT decoding so this never gets called,
+        // but the property must be present for the context to start.
+        registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
+                () -> base + "/jwks");
+        // Disable issuer validation so a missing issuer config doesn't break context load.
+        registry.add("sentinel.security.jwt.issuer", () -> "");
 
         // Route 0: user-service — GET and POST only
         registry.add("sentinel.gateway.routes[0].route-id",     () -> "user-service");
@@ -58,7 +75,7 @@ class GatewayRoutingIntegrationTest {
         registry.add("sentinel.gateway.routes[1].methods",      () -> "GET,POST");
         registry.add("sentinel.gateway.routes[1].enabled",      () -> "true");
 
-        // Route 2: test-disabled — DISABLED (unique id avoids conflict with application.yml's "legacy-service")
+        // Route 2: test-disabled — DISABLED
         registry.add("sentinel.gateway.routes[2].route-id",     () -> "test-disabled");
         registry.add("sentinel.gateway.routes[2].path",         () -> "/api/legacy/**");
         registry.add("sentinel.gateway.routes[2].service-uri",  () -> "http://localhost:9999");
@@ -74,6 +91,12 @@ class GatewayRoutingIntegrationTest {
     }
 
     private static void registerStubs() {
+        // Dummy JWKS endpoint so the property resolves even if somehow called
+        wireMock.stubFor(get(urlEqualTo("/jwks"))
+                .willReturn(aResponse().withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"keys\":[]}")));
+
         wireMock.stubFor(get(urlPathMatching("/api/users.*"))
                 .willReturn(aResponse().withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -101,7 +124,7 @@ class GatewayRoutingIntegrationTest {
 
     @Test
     void validRoute_getUsers_proxiesToUpstreamAndReturns200() {
-        webTestClient.get().uri("/api/users")
+        authed().get().uri("/api/users")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
@@ -110,7 +133,7 @@ class GatewayRoutingIntegrationTest {
 
     @Test
     void validRoute_getHello_proxiesToUpstreamAndReturns200() {
-        webTestClient.get().uri("/api/hello")
+        authed().get().uri("/api/hello")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
@@ -120,7 +143,7 @@ class GatewayRoutingIntegrationTest {
     @Test
     void validRoute_xRequestIdHeader_isPropagatedToUpstream() {
         String requestId = "test-routing-id-abc";
-        webTestClient.get().uri("/api/users")
+        authed().get().uri("/api/users")
                 .header("X-Request-ID", requestId)
                 .exchange()
                 .expectStatus().isOk()
@@ -131,14 +154,14 @@ class GatewayRoutingIntegrationTest {
 
     @Test
     void unknownRoute_noMatchingPath_returns404() {
-        webTestClient.get().uri("/api/unknown-service/resource")
+        authed().get().uri("/api/unknown-service/resource")
                 .exchange()
                 .expectStatus().isNotFound();
     }
 
     @Test
     void unknownRoute_rootPath_returns404() {
-        webTestClient.get().uri("/not/configured")
+        authed().get().uri("/not/configured")
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -147,7 +170,7 @@ class GatewayRoutingIntegrationTest {
 
     @Test
     void disabledRoute_isNotRegistered_returns404() {
-        webTestClient.get().uri("/api/legacy/resource")
+        authed().get().uri("/api/legacy/resource")
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -156,8 +179,7 @@ class GatewayRoutingIntegrationTest {
 
     @Test
     void unsupportedMethod_deleteOnHelloRoute_returns405() {
-        // hello-service only allows GET; DELETE → 405
-        webTestClient.delete().uri("/api/hello")
+        authed().delete().uri("/api/hello")
                 .exchange()
                 .expectStatus().value(status ->
                         org.assertj.core.api.Assertions.assertThat(status)
@@ -167,8 +189,7 @@ class GatewayRoutingIntegrationTest {
 
     @Test
     void unsupportedMethod_putOnUsersRoute_returns405() {
-        // user-service allows GET and POST only; PUT → 405
-        webTestClient.put().uri("/api/users/user-1")
+        authed().put().uri("/api/users/user-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("{\"name\":\"Alice\"}")
                 .exchange()

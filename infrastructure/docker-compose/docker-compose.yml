@@ -1,7 +1,7 @@
 version: "3.9"
 
-# ─── Phase 1 Docker Compose ───────────────────────────────────────────────────
-# Starts: sentinel-gateway + hello-service
+# ─── Phase 3 Docker Compose ───────────────────────────────────────────────────
+# Starts: sentinel-gateway + hello-service + Keycloak (OAuth2/OIDC IdP)
 #
 # Usage:
 #   docker compose up --build        # Build images and start
@@ -10,14 +10,40 @@ version: "3.9"
 #   docker compose logs -f           # Follow logs
 #
 # Test after startup:
-#   curl http://localhost:8080/api/hello
+#   # Get token from Keycloak
+#   TOKEN=$(curl -s -X POST http://localhost:8180/realms/sentinel/protocol/openid-connect/token \
+#     -d 'client_id=sentinel-gateway-client&grant_type=password' \
+#     -d 'username=alice&password=alice-password' | jq -r .access_token)
+#   curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/hello
 #   curl http://localhost:8080/actuator/health
 #
-# Infrastructure services (PostgreSQL, Redis, Kafka, Keycloak) are added
-# in later phases. Placeholders are commented out below for reference.
+# Infrastructure services (PostgreSQL, Redis, Kafka) are added in later phases.
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
+
+  # ── Keycloak — OAuth2/OIDC Identity Provider ──────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: keycloak
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "${KEYCLOAK_PORT:-8180}:8080"
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: "8080"
+    volumes:
+      - ../keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/realms/sentinel || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - sentinel-network
 
   # ── Sentinel Gateway ──────────────────────────────────────────────────────
   sentinel-gateway:
@@ -30,7 +56,11 @@ services:
     environment:
       HELLO_SERVICE_URL: "http://hello-service:8081"
       GATEWAY_PORT: "8080"
+      KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/sentinel/protocol/openid-connect/certs"
+      KEYCLOAK_ISSUER: "http://localhost:8180/realms/sentinel"
     depends_on:
+      keycloak:
+        condition: service_healthy
       hello-service:
         condition: service_healthy
     healthcheck:
@@ -43,7 +73,7 @@ services:
     networks:
       - sentinel-network
 
-  # ── Hello Service (Phase 1 smoke-test downstream) ─────────────────────────
+  # ── Hello Service (smoke-test downstream) ─────────────────────────────────
   hello-service:
     build:
       context: ../..
@@ -83,17 +113,12 @@ services:
   # kafka:
   #   image: confluentinc/cp-kafka:7.7.0
   #   ...
-  #
-  # keycloak:
-  #   image: quay.io/keycloak/keycloak:25.0
-  #   ...
 
 networks:
   sentinel-network:
     driver: bridge
 
 volumes:
-  # Placeholder volumes for future phases
   postgres-data:
     driver: local
   redis-data:
