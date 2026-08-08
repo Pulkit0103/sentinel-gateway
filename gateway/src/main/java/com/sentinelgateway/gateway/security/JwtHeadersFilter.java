@@ -14,37 +14,51 @@ import reactor.core.publisher.Mono;
 /**
  * Propagates verified JWT identity claims as trusted headers to upstream services.
  *
- * Runs only when the security context contains a validated JwtAuthenticationToken —
- * i.e., after Spring Security has already verified the signature, expiry, and issuer.
- * Upstream services must never trust these headers from external callers; they are
- * stripped and re-set here from the validated token only.
+ * Runs after Spring Security has validated the JWT; the principal fields are
+ * extracted by {@link JwtPrincipalExtractor} from the verified token only.
+ * Upstream services must accept these headers ONLY from the gateway — never
+ * from external callers — to prevent identity spoofing.
  *
- * Headers added:
- *   X-User-Id    — JWT `sub` claim (canonical user identity)
- *   X-Tenant-Id  — custom `tenant_id` claim (if present)
+ * Headers propagated:
+ *   X-User-Id    — JWT {@code sub} claim
+ *   X-Tenant-Id  — custom {@code tenant_id} claim (if present)
+ *   X-User-Roles — comma-separated roles (realm_access.roles or roles claim)
+ *
+ * IMPLEMENTATION NOTE: do NOT use switchIfEmpty() after the flatMap chain.
+ * chain.filter() returns Mono<Void> which always completes "empty" (no item
+ * emitted), so switchIfEmpty() would fire a second chain.filter() call, causing
+ * double-subscription on the response body ("Rejecting additional inbound
+ * receiver"). Instead, build a Mono<ServerWebExchange> first and then call
+ * chain.filter() exactly once via flatMap.
  */
 @Component
 public class JwtHeadersFilter implements GlobalFilter, Ordered {
 
+    private final JwtPrincipalExtractor principalExtractor;
+
+    public JwtHeadersFilter(JwtPrincipalExtractor principalExtractor) {
+        this.principalExtractor = principalExtractor;
+    }
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // Build a Mono<ServerWebExchange>: either mutated (JWT present) or original.
-        // Then call chain.filter() exactly once on whichever exchange is resolved.
-        // NOTE: do NOT use switchIfEmpty() after a Mono<Void> — Mono<Void> always
-        // completes "empty" (no item emitted), so switchIfEmpty() would fire a second
-        // chain.filter() call, causing double-subscription on the response body.
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(auth -> auth instanceof JwtAuthenticationToken)
                 .cast(JwtAuthenticationToken.class)
                 .map(JwtAuthenticationToken::getToken)
-                .map(jwt -> {
+                .map(principalExtractor::extract)
+                .map(principal -> {
                     ServerHttpRequest.Builder req = exchange.getRequest().mutate()
-                            .header("X-User-Id", jwt.getSubject());
-                    String tenantId = jwt.getClaimAsString("tenant_id");
-                    if (tenantId != null && !tenantId.isBlank()) {
-                        req.header("X-Tenant-Id", tenantId);
+                            .header("X-User-Id", principal.userId());
+
+                    if (principal.tenantId() != null && !principal.tenantId().isBlank()) {
+                        req.header("X-Tenant-Id", principal.tenantId());
                     }
+                    if (!principal.roles().isEmpty()) {
+                        req.header("X-User-Roles", String.join(",", principal.roles()));
+                    }
+
                     return (ServerWebExchange) exchange.mutate().request(req.build()).build();
                 })
                 .defaultIfEmpty(exchange)
