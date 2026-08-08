@@ -65,6 +65,13 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  threat-detection:
+    enabled: false  # set to true to enable WAF-style pattern detection
+    log-threshold: 25    # score >= this → LOG (pass with warning)
+    block-threshold: 60  # score >= this → BLOCK (400)
+    alert-threshold: 90  # score >= this → BLOCK + high-severity alert
+    blocked-ips: []
+
   policy:
     policies:
       - policy-id: user-service-policy
