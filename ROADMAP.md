@@ -86,13 +86,13 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 8 — Distributed Rate Limiting
+## Phase 8 — Distributed Rate Limiting ✅
 **Branch:** `feature/rate-limiting`
 
-- [ ] Redis-backed token bucket implementation
-- [ ] Policies: anonymous (100/min), USER (1000/min), PREMIUM (10000/min)
-- [ ] 429 response with `X-RateLimit-*` headers
-- [ ] Concurrent request tests for race condition safety
+- [x] Redis-backed fixed-window rate limiter (Lua script — atomic INCR+EXPIRE)
+- [x] Policies: ANONYMOUS (100/min), USER (1000/min), PREMIUM (10000/min)
+- [x] 429 response with `X-RateLimit-Limit/Remaining/Reset` headers
+- [x] Concurrent request tests; rate limiter gated on `sentinel.rate-limit.enabled`
 
 ---
 
