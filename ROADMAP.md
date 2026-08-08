@@ -136,13 +136,16 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 13 — Audit Logging
+## Phase 13 — Audit Logging ✅
 **Branch:** `feature/audit-logging`
 
-- [ ] Audit event for every security decision
-- [ ] Async publish to Kafka topic `sentinel.audit.requests`
-- [ ] Kafka in Docker Compose
-- [ ] Tests: events emitted for all security outcomes
+- [x] `AuditEvent` record: requestId, timestamp, clientIp, method, path, routeId, responseStatus, outcome
+- [x] `AuditEventPublisher` interface with `LoggingAuditEventPublisher` (fallback) and `KafkaAuditEventPublisher` (conditional)
+- [x] `AuditLoggingFilter` as outermost WebFilter (HIGHEST_PRECEDENCE+1), lazy publish via `Mono.defer`
+- [x] Kafka producer (fire-and-forget) via `KafkaAuditConfig`; gated on `sentinel.audit.kafka.enabled`
+- [x] `KafkaAutoConfiguration` excluded globally to prevent connection failures when Kafka is absent
+- [x] `outcomeFor()` maps status codes → semantic outcomes (ALLOWED, UNAUTHENTICATED, BLOCKED_WAF, etc.)
+- [x] Tests: authenticated→ALLOWED, unauthenticated→UNAUTHENTICATED, WAF-blocked→BLOCKED_WAF, requestId propagated, exactly-one event per request
 
 ---
 
