@@ -53,14 +53,15 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 5 — RBAC and Permissions
+## Phase 5 — RBAC and Permissions ✅
 **Branch:** `feature/rbac`
 
-- [ ] Roles: ADMIN, USER, SUPPORT, SERVICE
-- [ ] Permissions: USER_READ/WRITE, ORDER_READ/WRITE, PAYMENT_READ/WRITE
-- [ ] Endpoint-level permission requirements
-- [ ] 401 for unauthenticated; 403 for unauthorized
-- [ ] Comprehensive authorization test matrix
+- [x] Roles: ADMIN, USER, SUPPORT, SERVICE
+- [x] Permissions: USER_READ/WRITE, ORDER_READ/WRITE, PAYMENT_READ/WRITE, ADMIN_ALL
+- [x] RolePermissions: static role → permission mapping
+- [x] RouteAuthorizationFilter: enforces requiredScopes per route
+- [x] 401 for unauthenticated (Spring Security); 403 for unauthorized (RBAC)
+- [x] Comprehensive authorization test matrix (13 scenarios)
 
 ---
 
