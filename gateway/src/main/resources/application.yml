@@ -5,7 +5,6 @@ spring:
   application:
     name: sentinel-gateway
   main:
-    # Spring Cloud Gateway requires reactive web; block overriding to MVC
     web-application-type: reactive
 
 management:
@@ -27,19 +26,69 @@ info:
     name: Sentinel Gateway
     version: 0.1.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 1 - Bootstrap
+    phase: Phase 2 - Routing Engine
 
-# Sentinel Gateway application configuration.
-# Prefix: sentinel.gateway — avoids conflict with Spring Cloud's spring.cloud.gateway.* namespace.
-# The hello-service URL can be overridden via HELLO_SERVICE_URL without code changes.
+# ─── Route Definitions ────────────────────────────────────────────────────────
+# Each entry maps to a RouteDefinition domain object.
+# Disabled routes are not registered; requests to their paths return 404.
+# Method restrictions return 405 on mismatch.
+#
+# Future phases will move this to a database-backed RouteDefinitionRepository.
+# ─────────────────────────────────────────────────────────────────────────────
 sentinel:
   gateway:
-    hello-service-url: ${HELLO_SERVICE_URL:http://localhost:8081}
+    routes:
+      - route-id: hello-service
+        path: /api/hello/**
+        service-uri: ${HELLO_SERVICE_URL:http://localhost:8081}
+        methods: [GET]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      - route-id: user-service
+        path: /api/users/**
+        service-uri: ${USER_SERVICE_URL:http://localhost:8082}
+        methods: [GET, POST, PUT, PATCH, DELETE]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      - route-id: order-service
+        path: /api/orders/**
+        service-uri: ${ORDER_SERVICE_URL:http://localhost:8083}
+        methods: [GET, POST, PUT, PATCH, DELETE]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      - route-id: payment-service
+        path: /api/payments/**
+        service-uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
+        methods: [GET, POST]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      # Example of a disabled route — demonstrates the disable feature.
+      # Requests to /api/legacy/** will receive 404.
+      - route-id: legacy-service
+        path: /api/legacy/**
+        service-uri: http://localhost:9999
+        methods: [GET]
+        enabled: false
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
 
 logging:
   level:
     root: INFO
     com.sentinelgateway: DEBUG
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{X-Request-ID}] %logger{36} - %msg%n"
