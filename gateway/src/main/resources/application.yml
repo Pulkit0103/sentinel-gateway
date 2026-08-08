@@ -6,6 +6,12 @@ spring:
     name: sentinel-gateway
   main:
     web-application-type: reactive
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak JWKS endpoint — override with KEYCLOAK_JWKS_URI env var in Docker/K8s
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/sentinel/protocol/openid-connect/certs}
 
 management:
   endpoints:
@@ -26,7 +32,7 @@ info:
     name: Sentinel Gateway
     version: 0.1.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 2 - Routing Engine
+    phase: Phase 3 - OAuth2/OIDC/Keycloak
 
 # ─── Route Definitions ────────────────────────────────────────────────────────
 # Each entry maps to a RouteDefinition domain object.
@@ -36,6 +42,11 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  security:
+    jwt:
+      # Token issuer validated against every incoming JWT's `iss` claim.
+      # Must match the Keycloak realm URL exactly (scheme + host + port + path).
+      issuer: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/sentinel}
   gateway:
     routes:
       - route-id: hello-service
