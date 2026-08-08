@@ -28,6 +28,12 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
+        <!-- Reactive circuit breaker backed by Resilience4j — used by CircuitBreaker gateway filter -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
+
         <!-- Actuator for health, metrics, info endpoints -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
