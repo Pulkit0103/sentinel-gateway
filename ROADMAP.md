@@ -161,11 +161,14 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 15 — Service Discovery / Dynamic Backends
+## Phase 15 — Service Discovery / Dynamic Backends ✅
 **Branch:** `feature/service-discovery`
 
-- [ ] Kubernetes service DNS for downstream routing
-- [ ] Remove hardcoded pod addresses from route configuration
+- [x] Added `spring-cloud-starter-loadbalancer` — enables `ReactiveLoadBalancerClientFilter` for `lb://` URI resolution
+- [x] All default routes now use `lb://service-name` URIs instead of hardcoded `http://localhost:XXXX` addresses
+- [x] Simple Discovery Client (`spring.cloud.discovery.client.simple.instances`) provides static instance registration for local dev/Docker Compose; env-var overrides (`USER_SERVICE_URL`, etc.) propagate to instance URIs
+- [x] In Kubernetes, swap Simple Discovery Client for `spring-cloud-starter-kubernetes-client-all` to get DNS-backed service instances automatically
+- [x] Tests: `lb://` URI routes correctly to registered instance, round-robin load-balances across two instances, direct `http://` URIs continue to work alongside `lb://` routes (no regression)
 
 ---
 
