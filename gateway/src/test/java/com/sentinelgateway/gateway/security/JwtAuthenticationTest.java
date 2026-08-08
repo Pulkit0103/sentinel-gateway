@@ -10,6 +10,9 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +103,7 @@ class JwtAuthenticationTest {
 
     private String buildJwt(RSAKey signingKey, String issuer, Instant expiry) throws Exception {
         var signer = new RSASSASigner(signingKey);
+        var realmAccess = Map.of("roles", List.of("USER"));
         var claims = new JWTClaimsSet.Builder()
                 .subject("user-test-123")
                 .issuer(issuer)
@@ -107,6 +111,8 @@ class JwtAuthenticationTest {
                 .expirationTime(Date.from(expiry))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", "openid profile")
+                .claim("tenant_id", "tenant-acme")
+                .claim("realm_access", realmAccess)
                 .build();
         var jwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(),
@@ -191,10 +197,13 @@ class JwtAuthenticationTest {
         webTestClient.get().uri("/api/users")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isOk();
-        // JwtHeadersFilter must have forwarded X-User-Id = JWT sub
+                .expectStatus().isOk()
+                .expectBody(String.class).consumeWith(b -> {});
+        // JwtHeadersFilter + JwtPrincipalExtractor must have forwarded verified identity headers
         wireMock.verify(getRequestedFor(urlPathMatching("/api/users.*"))
-                .withHeader("X-User-Id", equalTo("user-test-123")));
+                .withHeader("X-User-Id", equalTo("user-test-123"))
+                .withHeader("X-Tenant-Id", equalTo("tenant-acme"))
+                .withHeader("X-User-Roles", equalTo("USER")));
     }
 
     // ── Tests: public endpoints ───────────────────────────────────────────────
