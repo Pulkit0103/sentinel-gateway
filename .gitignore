@@ -1,0 +1,100 @@
+# ─── Build outputs ────────────────────────────────────────────────────────────
+target/
+*/target/
+**/target/
+*.jar
+*.war
+*.ear
+*.class
+
+# ─── Maven ────────────────────────────────────────────────────────────────────
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ─── IDE: IntelliJ IDEA ───────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# ─── IDE: VS Code ─────────────────────────────────────────────────────────────
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+
+# ─── IDE: Eclipse ─────────────────────────────────────────────────────────────
+*.eclipse
+.apt_generated
+.sts4-cache/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── Secrets and credentials — NEVER commit these ─────────────────────────────
+.env
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+secrets/
+*-secrets.yml
+*-secrets.yaml
+*-secrets.properties
+local-secrets.properties
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# ─── Keys and certificates ────────────────────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.truststore
+private_key*
+*_private_key*
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
+spring.log
+
+# ─── Test reports ─────────────────────────────────────────────────────────────
+test-results/
+surefire-reports/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+# Allow Dockerfiles but ignore local overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ─── Node / Admin UI (future) ─────────────────────────────────────────────────
+admin-ui/node_modules/
+admin-ui/.next/
+admin-ui/out/
+admin-ui/.env
+admin-ui/.env.local
+
+# ─── Generated ────────────────────────────────────────────────────────────────
+generated/
+gen/
+
+# ─── Temporary ────────────────────────────────────────────────────────────────
+*.tmp
+*.swp
+*.swo
+*~

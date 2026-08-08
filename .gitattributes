@@ -1,0 +1,32 @@
+# Default: normalize to LF in repo, check out as-is on Windows
+* text=auto
+
+# Force LF for code and config (consistent diffs, script compatibility)
+*.java   text eol=lf
+*.xml    text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.sh     text eol=lf
+*.sql    text eol=lf
+*.properties text eol=lf
+Dockerfile   text eol=lf
+.gitignore   text eol=lf
+.gitattributes text eol=lf
+.env.example text eol=lf
+
+# Windows scripts — keep CRLF
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+
+# Binaries — no text normalization
+*.jar    binary
+*.class  binary
+*.png    binary
+*.jpg    binary
+*.gif    binary
+*.ico    binary
+*.zip    binary
+*.gz     binary
+*.tar    binary

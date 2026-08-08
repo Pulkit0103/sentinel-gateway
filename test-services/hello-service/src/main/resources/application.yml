@@ -1,0 +1,29 @@
+server:
+  port: ${HELLO_SERVICE_PORT:8081}
+
+spring:
+  application:
+    name: hello-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Hello Service
+    version: 0.1.0-SNAPSHOT
+    description: Phase 1 smoke-test downstream service
+
+logging:
+  level:
+    root: INFO
+    com.sentinelgateway: DEBUG

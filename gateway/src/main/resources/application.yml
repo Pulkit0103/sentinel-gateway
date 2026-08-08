@@ -1,0 +1,45 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: sentinel-gateway
+  main:
+    # Spring Cloud Gateway requires reactive web; block overriding to MVC
+    web-application-type: reactive
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Sentinel Gateway
+    version: 0.1.0-SNAPSHOT
+    description: Zero-Trust API Security and Traffic Management Platform
+    phase: Phase 1 - Bootstrap
+
+# Sentinel Gateway application configuration.
+# Prefix: sentinel.gateway — avoids conflict with Spring Cloud's spring.cloud.gateway.* namespace.
+# The hello-service URL can be overridden via HELLO_SERVICE_URL without code changes.
+sentinel:
+  gateway:
+    hello-service-url: ${HELLO_SERVICE_URL:http://localhost:8081}
+
+logging:
+  level:
+    root: INFO
+    com.sentinelgateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{X-Request-ID}] %logger{36} - %msg%n"
