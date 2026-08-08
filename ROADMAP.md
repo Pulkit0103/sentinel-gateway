@@ -96,12 +96,12 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 9 — Quotas
+## Phase 9 — Quotas ✅
 **Branch:** `feature/quotas`
 
-- [ ] Tenant-level daily/monthly quotas (distinct from per-second rate limits)
-- [ ] Redis counters + PostgreSQL for durable configuration
-- [ ] 429 on quota exceeded
+- [x] Tenant-level daily/monthly quotas (distinct from per-second rate limits)
+- [x] Redis INCR+EXPIRE counters; config via QuotaProperties (per-tenant overrides supported)
+- [x] 429 on quota exceeded with X-Quota-Limit/Used/Reset headers
 
 ---
 
