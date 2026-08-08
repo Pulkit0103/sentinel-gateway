@@ -105,14 +105,15 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 10 — HMAC Request Signing
+## Phase 10 — HMAC Request Signing ✅
 **Branch:** `feature/request-signing`
 
-- [ ] `X-Client-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature` headers
-- [ ] HMAC-SHA256 over: method + path + timestamp + nonce + body hash
-- [ ] Timestamp validity window
-- [ ] Redis nonce store with TTL for replay prevention
-- [ ] Tests: valid, invalid sig, tampered body, expired, reused nonce
+- [x] `X-Client-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature` headers
+- [x] HMAC-SHA256 over: method + path + timestamp + nonce + body hash (constant-time verify)
+- [x] Configurable timestamp validity window (default 5 min)
+- [x] Redis nonce store (SET NX EX) with TTL for atomic replay prevention
+- [x] Valid HMAC provides standalone HmacAuthentication (no JWT required)
+- [x] Tests: valid→200, invalid sig→401, tampered body→401, expired→401, reused nonce→401
 
 ---
 
