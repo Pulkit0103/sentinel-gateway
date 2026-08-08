@@ -63,6 +63,31 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
+        <!--
+          Prometheus metrics registry — exposes /actuator/prometheus for scraping.
+          Uses micrometer-registry-prometheus-simpleclient (io.micrometer.prometheus package)
+          which is the artifact Spring Boot 3.3.x autoconfiguration knows about.
+          The new-client artifact (micrometer-registry-prometheus, io.micrometer.prometheusmetrics)
+          requires Spring Boot 3.4+ autoconfiguration updates.
+        -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+        </dependency>
+
+        <!-- Micrometer Tracing OTel bridge — distributed tracing with trace/span MDC population -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <!-- Structured JSON logging for production (Loki / Splunk / CloudWatch) -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

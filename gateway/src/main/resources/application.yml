@@ -35,7 +35,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
@@ -50,6 +50,9 @@ management:
   info:
     env:
       enabled: true
+  tracing:
+    sampling:
+      probability: 1.0  # 100% sampling; reduce in high-traffic prod environments
 
 info:
   app:
@@ -183,5 +186,3 @@ logging:
     root: INFO
     com.sentinelgateway: DEBUG
     org.springframework.cloud.gateway: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{X-Request-ID}] %logger{36} - %msg%n"
