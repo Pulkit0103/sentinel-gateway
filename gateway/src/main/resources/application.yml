@@ -65,6 +65,32 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  policy:
+    policies:
+      - policy-id: user-service-policy
+        route-id: user-service
+        require-mfa: false
+        request-signing-required: false
+        required-scopes: []
+        allowed-methods: [GET, POST, PUT, PATCH, DELETE]
+        rate-limit-policy: USER
+
+      - policy-id: order-service-policy
+        route-id: order-service
+        require-mfa: false
+        request-signing-required: false
+        required-scopes: []
+        allowed-methods: [GET, POST, PUT, PATCH, DELETE]
+        rate-limit-policy: USER
+
+      - policy-id: payment-service-policy
+        route-id: payment-service
+        require-mfa: false
+        request-signing-required: false
+        required-scopes: []
+        allowed-methods: [GET, POST]
+        rate-limit-policy: PREMIUM
+
   request-signing:
     enabled: false  # set to true to require HMAC signatures
     timestamp-tolerance-seconds: 300

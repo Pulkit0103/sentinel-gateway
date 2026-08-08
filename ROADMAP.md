@@ -117,12 +117,12 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 11 — Security Policy Engine
+## Phase 11 — Security Policy Engine ✅
 **Branch:** `feature/policy-engine`
 
-- [ ] Route-level policy model (JSON/DB-backed)
-- [ ] Policy fields: allowedMethods, requiredScopes, requireMfa, rateLimitPolicy, requestSigningRequired
-- [ ] Extensible evaluator (no giant if/else chains)
+- [x] Route-level policy model (JSON/DB-backed)
+- [x] Policy fields: allowedMethods, requiredScopes, requireMfa, rateLimitPolicy, requestSigningRequired
+- [x] Extensible evaluator (no giant if/else chains)
 
 ---
 
