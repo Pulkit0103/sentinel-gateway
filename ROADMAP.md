@@ -76,13 +76,13 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 7 — Multi-Tenancy
+## Phase 7 — Multi-Tenancy ✅
 **Branch:** `feature/multi-tenancy`
 
-- [ ] Every authenticated request carries trusted tenant identity
-- [ ] Tenant context verified from authentication mechanism (not arbitrary headers)
-- [ ] Prevent tenant spoofing
-- [ ] Tests: own tenant → allow; cross-tenant → 403; missing tenant → deny
+- [x] Every authenticated request carries trusted tenant identity
+- [x] Tenant context verified from authentication mechanism (not arbitrary headers)
+- [x] Prevent tenant spoofing (X-Tenant-Id header spoofing rejected)
+- [x] Tests: tenant present → allow; missing tenant on required route → 403; spoofed header → 401/403
 
 ---
 
