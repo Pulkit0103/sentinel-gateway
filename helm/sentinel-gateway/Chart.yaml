@@ -1,0 +1,14 @@
+apiVersion: v2
+name: sentinel-gateway
+description: Production-grade API gateway with JWT auth, rate limiting, threat detection, and audit logging
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - api-gateway
+  - security
+  - jwt
+  - rate-limiting
+home: https://github.com/Pulkit0103/sentinel-gateway
+maintainers:
+  - name: Pulkit Girdhar
