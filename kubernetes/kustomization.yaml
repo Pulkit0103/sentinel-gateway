@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: sentinel
+
+resources:
+  # 1. Namespace first
+  - namespace.yaml
+  # 2. Config and secrets
+  - secrets.yaml
+  - configmap.yaml
+  - postgresql-init-configmap.yaml
+  - keycloak-realm-configmap.yaml
+  - grafana-provisioning-configmap.yaml
+  # 3. Infrastructure: databases, messaging
+  - postgresql.yaml
+  - redis.yaml
+  - kafka.yaml
+  # 4. Auth provider
+  - keycloak.yaml
+  # 5. Application
+  - gateway.yaml
+  # 6. Downstream test services
+  - test-services.yaml
+  # 7. Observability
+  - monitoring.yaml

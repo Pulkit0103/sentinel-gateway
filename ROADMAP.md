@@ -212,13 +212,16 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 20 — Kubernetes
+## Phase 20 — Kubernetes ✅
 **Branch:** `feature/kubernetes`
 
-- [ ] Kubernetes manifests: deployments, services, config maps, secrets refs
-- [ ] Health/readiness probes
-- [ ] Resource requests/limits
-- [ ] Multi-replica gateway
+- [x] Kubernetes manifests: deployments, services, configmaps, secrets refs (kustomization.yaml entrypoint)
+- [x] Health/readiness/startup probes on all deployments
+- [x] Resource requests/limits on all containers
+- [x] Multi-replica gateway (2 replicas, RollingUpdate maxUnavailable=0)
+- [x] RBAC for Prometheus pod discovery
+- [x] PostgreSQL DDL ConfigMap + PVC; Redis PVC + password from Secret; Kafka KRaft PVC
+- [x] Grafana provisioning ConfigMap (datasource + dashboard bundled)
 
 ---
 

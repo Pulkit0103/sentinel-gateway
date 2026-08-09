@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentinel-config
+  namespace: sentinel
+data:
+  GATEWAY_PORT: "8080"
+  KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/sentinel/protocol/openid-connect/certs"
+  KEYCLOAK_ISSUER: "http://keycloak:8080/realms/sentinel"
+  SPRING_SQL_INIT_MODE: "never"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  SENTINEL_RATE_LIMIT_ENABLED: "true"
+  SENTINEL_QUOTA_ENABLED: "true"
+  SENTINEL_THREAT_DETECTION_ENABLED: "true"
+  SENTINEL_AUDIT_KAFKA_ENABLED: "true"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  HELLO_SERVICE_URL: "http://hello-service:8081"
+  USER_SERVICE_URL: "http://user-service:8082"
+  ORDER_SERVICE_URL: "http://order-service:8083"
+  PAYMENT_SERVICE_URL: "http://payment-service:8084"
