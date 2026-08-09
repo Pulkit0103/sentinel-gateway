@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+data:
+  GATEWAY_PORT: {{ .Values.gateway.port | quote }}
+  KEYCLOAK_JWKS_URI: {{ .Values.gateway.keycloak.jwksUri | quote }}
+  KEYCLOAK_ISSUER: {{ .Values.gateway.keycloak.issuer | quote }}
+  SPRING_SQL_INIT_MODE: "never"
+  REDIS_HOST: {{ include "sentinel-gateway.fullname" . }}-redis
+  REDIS_PORT: "6379"
+  SENTINEL_RATE_LIMIT_ENABLED: {{ .Values.gateway.rateLimitEnabled | quote }}
+  SENTINEL_QUOTA_ENABLED: {{ .Values.gateway.quotaEnabled | quote }}
+  SENTINEL_THREAT_DETECTION_ENABLED: {{ .Values.gateway.threatDetectionEnabled | quote }}
+  SENTINEL_AUDIT_KAFKA_ENABLED: {{ .Values.gateway.auditKafkaEnabled | quote }}
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "{{ include "sentinel-gateway.fullname" . }}-kafka:9092"
+  HELLO_SERVICE_URL: "http://{{ include "sentinel-gateway.fullname" . }}-hello:{{ .Values.testServices.hello.port }}"
+  USER_SERVICE_URL: "http://{{ include "sentinel-gateway.fullname" . }}-user:{{ .Values.testServices.user.port }}"
+  ORDER_SERVICE_URL: "http://{{ include "sentinel-gateway.fullname" . }}-order:{{ .Values.testServices.order.port }}"
+  PAYMENT_SERVICE_URL: "http://{{ include "sentinel-gateway.fullname" . }}-payment:{{ .Values.testServices.payment.port }}"

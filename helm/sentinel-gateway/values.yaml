@@ -1,0 +1,132 @@
+## Sentinel Gateway Helm Chart — Default Values
+## Override with: helm install sentinel-gateway ./helm/sentinel-gateway -f my-values.yaml
+
+replicaCount: 2
+
+image:
+  repository: sentinel-gateway
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: gateway.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+gateway:
+  port: "8080"
+  keycloak:
+    jwksUri: "http://keycloak:8080/realms/sentinel/protocol/openid-connect/certs"
+    issuer: "http://keycloak:8080/realms/sentinel"
+  rateLimitEnabled: "true"
+  quotaEnabled: "true"
+  threatDetectionEnabled: "true"
+  auditKafkaEnabled: "true"
+
+postgresql:
+  enabled: true
+  image: postgres:16-alpine
+  storage: 2Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  storage: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+kafka:
+  enabled: true
+  image: bitnami/kafka:3.7
+  storage: 5Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+keycloak:
+  enabled: true
+  image: quay.io/keycloak/keycloak:25.0
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+prometheus:
+  enabled: true
+  image: prom/prometheus:v2.54.1
+  storage: 5Gi
+
+grafana:
+  enabled: true
+  image: grafana/grafana:11.2.0
+  storage: 1Gi
+  service:
+    type: NodePort
+    nodePort: 30300
+
+secrets:
+  # IMPORTANT: Override all defaults in production via --set secrets.* or an external secret manager
+  databasePassword: "sentinel_secret"
+  redisPassword: "redis_secret"
+  keycloakAdminPassword: "admin"
+  hmacSharedSecret: "change-me-in-production"
+
+testServices:
+  enabled: true
+  hello:
+    image: hello-service:latest
+    port: 8081
+  user:
+    image: user-service:latest
+    port: 8082
+  order:
+    image: order-service:latest
+    port: 8083
+  payment:
+    image: payment-service:latest
+    port: 8084
