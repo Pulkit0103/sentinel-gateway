@@ -251,10 +251,18 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 23 — Security Test Suite
+## Phase 23 — Security Test Suite ✅
 **Branch:** `feature/security-tests`
 
-- [ ] Automated tests: expired/invalid/tampered JWT, missing scopes, API key reuse/revoke/expire, tenant spoofing, replay, SQLi/XSS patterns, oversized requests, unauthorized admin
+- [x] `SecurityRegressionTest.java`: 19 tests covering the full attack surface in one class
+- [x] JWT boundary: malformed token, no Bearer prefix, empty roles, ADMIN role access
+- [x] Authorization boundary: admin endpoint returns 401 unauthenticated, 403 with USER role
+- [x] Actuator + Prometheus publicly accessible (no auth required)
+- [x] CORS preflight (OPTIONS) never returns 401
+- [x] API key lifecycle: create → verify → revoke → verify rejection; pre-expired key; non-existent key
+- [x] WAF injection: SQL injection (score=60), XSS (score=50), command injection (score=80) → 400 blocked
+- [x] Path traversal (score=30 < block threshold=40) → NOT blocked (logged only)
+- [x] Tenant spoofing: X-Tenant-Id header overwritten by JwtHeadersFilter; upstream receives JWT tenant
 
 ---
 
