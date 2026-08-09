@@ -279,11 +279,14 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 25 — Production Hardening
+## Phase 25 — Production Hardening ✅
 **Branch:** `feature/production-hardening`
 
-- [ ] Full system security review
-- [ ] Threat model (`THREAT_MODEL.md`)
-- [ ] Architecture Decision Records complete
-- [ ] Graceful shutdown, liveness/readiness probes
-- [ ] Failure mode documentation: Kafka down, Redis down, PostgreSQL down, downstream down
+- [x] `THREAT_MODEL.md`: full STRIDE analysis (S6 spoofing, T5 tampering, R2 repudiation, I4 disclosure, D5 DoS, E4 privilege); residual risks; security controls summary
+- [x] `FAILURE_MODES.md`: behavior matrix for PostgreSQL/Redis/Kafka/Keycloak/downstream failures; recovery notes; production mitigations
+- [x] ADR-004: PostgreSQL + R2DBC (non-blocking, dialect differences, H2 for tests)
+- [x] ADR-005: Redis for distributed rate limiting and nonce store (Lua atomicity, fail-open rationale)
+- [x] ADR-006: Kafka for audit event streaming (fire-and-forget, compliance tradeoffs)
+- [x] ADR-007: Security filter chain ordering (WebFilter and GlobalFilter order table with rationale)
+- [x] Graceful shutdown: `server.shutdown=graceful`, `timeout-per-shutdown-phase=30s`
+- [x] Liveness/readiness probes: `/actuator/health/liveness` (livenessState) and `/actuator/health/readiness` (readinessState) groups; both state contributors explicitly enabled
