@@ -183,30 +183,32 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 17 — Admin API
+## Phase 17 — Admin API ✅
 **Branch:** `feature/admin-api`
 
-- [ ] Protected endpoints: routes, API keys, policies, tenants, audit events, metrics
-- [ ] Role-guarded (ADMIN role required)
-- [ ] API key revocation
+- [x] Protected endpoints: routes, API keys, policies, tenants, audit events, metrics
+- [x] Role-guarded (ADMIN role required)
+- [x] API key revocation
 
 ---
 
-## Phase 18 — Admin Dashboard
+## Phase 18 — Admin Dashboard ✅
 **Branch:** `feature/admin-dashboard`
 
-- [ ] Next.js + TypeScript
-- [ ] Metrics overview, route management, API key management, audit log viewer
-- [ ] Tenant management, policy management
+- [x] Next.js + TypeScript
+- [x] Metrics overview, route management, API key management, audit log viewer
+- [x] Tenant management, policy management
 
 ---
 
-## Phase 19 — Docker Compose (Full)
+## Phase 19 — Docker Compose (Full) ✅
 **Branch:** `feature/docker-compose`
 
-- [ ] Complete local stack: gateway + Keycloak + PostgreSQL + Redis + Kafka + test services + Prometheus + Grafana
-- [ ] `docker compose up` as primary dev startup
-- [ ] Data initialization scripts
+- [x] Complete local stack: gateway + Keycloak + PostgreSQL + Redis + Kafka + test services + Prometheus + Grafana + admin dashboard
+- [x] `docker compose up` as primary dev startup
+- [x] Data initialization scripts (PostgreSQL DDL via init.sql)
+- [x] Prometheus scrape config + Grafana provisioning (datasource, dashboard provider, 4-panel gateway dashboard)
+- [x] `.env.example` for configurable ports and credentials
 
 ---
 
