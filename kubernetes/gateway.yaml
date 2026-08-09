@@ -1,0 +1,180 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-gateway
+  namespace: sentinel
+  labels:
+    app: sentinel-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sentinel-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: sentinel-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: sentinel-gateway
+          image: sentinel-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GATEWAY_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: GATEWAY_PORT
+            - name: KEYCLOAK_JWKS_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: KEYCLOAK_JWKS_URI
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: KEYCLOAK_ISSUER
+            - name: SPRING_SQL_INIT_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: SPRING_SQL_INIT_MODE
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: REDIS_PORT
+            - name: SENTINEL_RATE_LIMIT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: SENTINEL_RATE_LIMIT_ENABLED
+            - name: SENTINEL_QUOTA_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: SENTINEL_QUOTA_ENABLED
+            - name: SENTINEL_THREAT_DETECTION_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: SENTINEL_THREAT_DETECTION_ENABLED
+            - name: SENTINEL_AUDIT_KAFKA_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: SENTINEL_AUDIT_KAFKA_ENABLED
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: SPRING_KAFKA_BOOTSTRAP_SERVERS
+            - name: HELLO_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: HELLO_SERVICE_URL
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: USER_SERVICE_URL
+            - name: ORDER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: ORDER_SERVICE_URL
+            - name: PAYMENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: PAYMENT_SERVICE_URL
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentinel-secrets
+                  key: DATABASE_PASSWORD
+            - name: R2DBC_URL
+              value: "r2dbc:postgresql://sentinelgateway:$(DATABASE_PASSWORD)@postgresql:5432/sentinelgateway"
+            - name: SPRING_DATA_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentinel-secrets
+                  key: REDIS_PASSWORD
+            - name: HMAC_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sentinel-secrets
+                  key: HMAC_SHARED_SECRET
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            failureThreshold: 12
+            periodSeconds: 10
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-gateway
+  namespace: sentinel
+spec:
+  selector:
+    app: sentinel-gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-gateway-external
+  namespace: sentinel
+spec:
+  type: LoadBalancer
+  selector:
+    app: sentinel-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
