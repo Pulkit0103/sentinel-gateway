@@ -1,0 +1,122 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-postgresql-pvc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .Values.postgresql.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-postgresql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sentinel-gateway.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- include "sentinel-gateway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: {{ .Values.postgresql.image }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: sentinelgateway
+            - name: POSTGRES_USER
+              value: sentinelgateway
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sentinel-gateway.fullname" . }}-secrets
+                  key: DATABASE_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            {{- toYaml .Values.postgresql.resources | nindent 12 }}
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, sentinelgateway, -d, sentinelgateway]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, sentinelgateway, -d, sentinelgateway]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "sentinel-gateway.fullname" . }}-postgresql-pvc
+        - name: init-sql
+          configMap:
+            name: {{ include "sentinel-gateway.fullname" . }}-postgresql-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-postgresql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "sentinel-gateway.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-postgresql-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS api_keys (
+        id          BIGSERIAL           PRIMARY KEY,
+        client_id   VARCHAR(255)        NOT NULL,
+        tenant_id   VARCHAR(255)        NOT NULL,
+        key_hash    VARCHAR(64)         NOT NULL UNIQUE,
+        status      VARCHAR(20)         NOT NULL DEFAULT 'ACTIVE',
+        scopes      TEXT,
+        created_at  TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
+        expires_at  TIMESTAMPTZ,
+        revoked_at  TIMESTAMPTZ
+    );
+    CREATE TABLE IF NOT EXISTS security_policies (
+        id                       BIGSERIAL       PRIMARY KEY,
+        route_id                 VARCHAR(255)    NOT NULL UNIQUE,
+        allowed_methods          TEXT,
+        required_scopes          TEXT,
+        require_mfa              BOOLEAN         NOT NULL DEFAULT FALSE,
+        rate_limit_policy        VARCHAR(50),
+        request_signing_required BOOLEAN         NOT NULL DEFAULT FALSE,
+        created_at               TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+        updated_at               TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+    );
+{{- end }}

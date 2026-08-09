@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sentinel-gateway.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "sentinel-gateway.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: {{ .Values.gateway.port | quote }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.gateway.port | int }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "sentinel-gateway.fullname" . }}-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sentinel-gateway.fullname" . }}-secrets
+                  key: DATABASE_PASSWORD
+            - name: R2DBC_URL
+              value: "r2dbc:postgresql://sentinelgateway:$(DATABASE_PASSWORD)@{{ include "sentinel-gateway.fullname" . }}-postgresql:5432/sentinelgateway"
+            - name: SPRING_DATA_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sentinel-gateway.fullname" . }}-secrets
+                  key: REDIS_PASSWORD
+            - name: HMAC_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sentinel-gateway.fullname" . }}-secrets
+                  key: HMAC_SHARED_SECRET
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: {{ .Values.gateway.port | int }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: {{ .Values.gateway.port | int }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.gateway.port | int }}
+            failureThreshold: 12
+            periodSeconds: 10
+      terminationGracePeriodSeconds: 30

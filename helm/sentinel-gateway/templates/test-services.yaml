@@ -1,0 +1,67 @@
+{{- if .Values.testServices.enabled }}
+{{- $fullname := include "sentinel-gateway.fullname" . }}
+{{- $labels := include "sentinel-gateway.labels" . }}
+{{- $selectorLabels := include "sentinel-gateway.selectorLabels" . }}
+{{- $ns := .Release.Namespace }}
+
+{{- range $name, $svc := dict "hello" .Values.testServices.hello "user" .Values.testServices.user "order" .Values.testServices.order "payment" .Values.testServices.payment }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-{{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- $labels | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- $selectorLabels | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}-service
+  template:
+    metadata:
+      labels:
+        {{- $selectorLabels | nindent 8 }}
+        app.kubernetes.io/component: {{ $name }}-service
+    spec:
+      containers:
+        - name: {{ $name }}-service
+          image: {{ $svc.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ $svc.port }}
+          env:
+            - name: {{ upper $name }}_SERVICE_PORT
+              value: {{ $svc.port | quote }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ $svc.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-{{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  selector:
+    {{- $selectorLabels | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}-service
+  ports:
+    - port: {{ $svc.port }}
+      targetPort: {{ $svc.port }}
+{{- end }}
+{{- end }}

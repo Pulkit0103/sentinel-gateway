@@ -1,0 +1,104 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-keycloak-realm
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+data:
+  realm-export.json: |
+    {
+      "realm": "sentinel", "enabled": true, "displayName": "Sentinel Gateway",
+      "accessTokenLifespan": 300, "bruteForceProtected": true,
+      "roles": {"realm": [
+        {"name": "ADMIN"}, {"name": "USER"}, {"name": "SUPPORT"}, {"name": "SERVICE"}
+      ]},
+      "clients": [{"clientId": "sentinel-gateway-client", "enabled": true, "publicClient": true,
+        "directAccessGrantsEnabled": true, "standardFlowEnabled": true,
+        "protocol": "openid-connect", "redirectUris": ["http://localhost:*"],
+        "defaultClientScopes": ["openid", "profile", "email", "roles"]}],
+      "users": [
+        {"username": "alice", "email": "alice@example.com", "enabled": true,
+          "credentials": [{"type": "password", "value": "alice-password"}],
+          "realmRoles": ["USER"], "attributes": {"tenant_id": ["tenant-acme"]}},
+        {"username": "bob-admin", "email": "bob@example.com", "enabled": true,
+          "credentials": [{"type": "password", "value": "bob-password"}],
+          "realmRoles": ["USER", "ADMIN"], "attributes": {"tenant_id": ["tenant-acme"]}}
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-keycloak
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sentinel-gateway.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: keycloak
+  template:
+    metadata:
+      labels:
+        {{- include "sentinel-gateway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: {{ .Values.keycloak.image }}
+          args: [start-dev, --import-realm]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sentinel-gateway.fullname" . }}-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_HTTP_PORT
+              value: "8080"
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+          resources:
+            {{- toYaml .Values.keycloak.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /realms/sentinel
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /realms/sentinel
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+      volumes:
+        - name: realm-import
+          configMap:
+            name: {{ include "sentinel-gateway.fullname" . }}-keycloak-realm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sentinel-gateway.fullname" . }}-keycloak
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel-gateway.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "sentinel-gateway.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080
+{{- end }}
