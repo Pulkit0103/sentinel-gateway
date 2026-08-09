@@ -1,7 +1,10 @@
 server:
   port: ${GATEWAY_PORT:8080}
+  shutdown: graceful   # drain in-flight requests before JVM exit
 
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s   # match terminationGracePeriodSeconds in K8s
   application:
     name: sentinel-gateway
   main:
@@ -74,7 +77,21 @@ management:
     health:
       show-details: always
       show-components: always
+      # Liveness: JVM alive, Spring context started, not deadlocked
+      # Readiness: app ready to serve traffic (set to REFUSING_TRAFFIC during graceful shutdown)
+      # Both groups are required for Kubernetes liveness/readiness probes to work.
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
   health:
+    # Kubernetes liveness/readiness state contributors must be explicitly enabled
+    # so that /actuator/health/liveness and /actuator/health/readiness groups work.
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
     # Redis is used for rate limiting only; rate limiting fails open when Redis is down.
     # Excluding Redis from health rollup prevents an unavailable Redis from marking
     # the gateway DOWN — the gateway can still serve traffic with rate limiting disabled.
