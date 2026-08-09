@@ -238,11 +238,16 @@ Each phase is an independently working increment. A phase is complete only when:
 
 ---
 
-## Phase 22 — CI/CD
+## Phase 22 — CI/CD ✅
 **Branch:** `feature/cicd`
 
-- [ ] GitHub Actions: compile → test → static analysis → dependency scan → Docker build → container scan → publish
-- [ ] No secrets in source control; GitHub Secrets / OIDC
+- [x] `.github/workflows/ci.yml`: 6-stage pipeline (compile → test → static analysis → dependency scan → Docker build → container scan)
+- [x] `.github/workflows/release.yml`: tag-triggered release with versioned Docker image + GitHub Release notes
+- [x] No secrets in source control — GITHUB_TOKEN for registry auth; all passwords via GitHub Secrets
+- [x] Docker layer caching (GHA cache) for fast builds
+- [x] Trivy container scan → SARIF uploaded to GitHub Security tab
+- [x] OWASP Dependency Check with CVSS 9+ threshold; suppression file included
+- [x] Test report artifact upload on every run
 
 ---
 
