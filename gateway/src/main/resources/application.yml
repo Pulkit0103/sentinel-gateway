@@ -12,6 +12,17 @@ spring:
         # Global HTTP client timeouts; per-route sentinel.resilience.timeout-ms overrides the response timeout.
         connect-timeout: 3000      # 3 s to establish TCP connection
         response-timeout: 30000ms  # 30 s global response deadline (reduced per route via filter)
+    globalcors:
+      # Allow the admin dashboard (localhost:3001) to call the gateway from a browser.
+      # Preflight OPTIONS requests are also permitted in SecurityConfig.
+      add-to-simple-url-handler-mapping: true
+      corsConfigurations:
+        '[/**]':
+          allowedOrigins:
+            - "http://localhost:3001"
+          allowedMethods: [GET, POST, DELETE, PUT, PATCH, OPTIONS]
+          allowedHeaders: ["*"]
+          maxAge: 3600
     discovery:
       client:
         simple:
