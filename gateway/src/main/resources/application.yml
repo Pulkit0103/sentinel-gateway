@@ -178,6 +178,9 @@ sentinel:
     timestamp-tolerance-seconds: 300
     nonce-ttl-seconds: 600
     shared-secret: ${HMAC_SHARED_SECRET:change-me-in-production}
+  revocation:
+    enabled: false  # set to true when Redis is available
+
   quota:
     enabled: false  # set to true when Redis is available
     default-daily-limit: 100000

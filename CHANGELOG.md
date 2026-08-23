@@ -6,6 +6,41 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.6.0] – 2026-08-24 — Phase 6: JWT Revocation + Token Introspection
+
+### Added
+- `TokenRevocationService` interface: `revokeToken(jti, ttl)` and `isRevoked(jti)` contract for
+  JWT blocklist management
+- `RedisTokenRevocationService`: Redis-backed implementation using key format
+  `sentinel:revoked:{jti}` with auto-expiring TTL equal to the token's remaining lifetime
+- `NoOpTokenRevocationService`: no-op fallback that always reports tokens as not revoked;
+  used when Redis is unavailable or revocation is disabled
+- `TokenRevocationConfig`: conditional bean registration — Redis impl when
+  `sentinel.revocation.enabled=true`, no-op fallback via `@ConditionalOnMissingBean`
+- `JwtRevocationFilter` (`GlobalFilter`, `HIGHEST_PRECEDENCE + 5`): checks the incoming JWT's
+  `jti` claim against the Redis blocklist on every authenticated request; tokens without a JTI
+  skip the check; revoked tokens receive 401 via `ResponseStatusException`; uses
+  `com.nimbusds.jwt.JWTParser` to extract JTI without re-verifying the signature
+- `RevocationController` (`POST /admin/revoke`): admin endpoint to revoke a token by JTI;
+  validates `expiresAt` is in the future (400 if already expired), then stores JTI in Redis with
+  remaining TTL; requires `ADMIN` role (enforced by Spring Security path rules on `/admin/**`)
+- `RevocationRequest` record: `{jti, expiresAt}` request body for the revoke endpoint
+- `sentinel.revocation.enabled: false` YAML property — set to `true` when Redis is available
+- Integration tests: `RevocationFilterTest` (2 tests: not-revoked→200, revoked→401) and
+  `RevocationControllerTest` (3 tests: future expiry→204, past expiry→400, non-admin→403) —
+  both use `@MockBean TokenRevocationService` to avoid requiring a live Redis instance;
+  total suite now 181 tests, 0 failures
+
+### Design notes
+- `JwtRevocationFilter` is a `GlobalFilter` (not `WebFilter`) so it runs inside Spring Cloud
+  Gateway's filter chain AFTER Spring Security authenticates the request and populates the
+  `ReactiveSecurityContextHolder`
+- JTI extraction uses `JWTParser.parse()` (Nimbus JOSE+JWT, already a transitive dependency via
+  `spring-security-oauth2-jose`) — no signature re-verification, just claims parsing
+- The no-op fallback keeps the gateway operational without Redis (fail-open for revocation)
+
+---
+
 ## [0.5.0] – 2026-08-24 — Phase 5: Traffic Splitting & Canary Routing
 
 ### Added

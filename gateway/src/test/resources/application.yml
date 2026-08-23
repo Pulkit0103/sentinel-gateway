@@ -19,6 +19,9 @@ sentinel:
     nonce-ttl-seconds: 600
     shared-secret: test-shared-secret
 
+  revocation:
+    enabled: false
+
   quota:
     enabled: false
 
