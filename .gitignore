@@ -103,6 +103,11 @@ gen/
 # ─── Claude Code (local AI assistant session data) ────────────────────────────
 .claude/
 
+# ─── Local push/automation scripts (contain PATs — never commit) ──────────────
+scripts/
+push-and-wiki.bat
+push-and-wiki.sh
+
 # ─── Temporary / scratch files ────────────────────────────────────────────────
 *.tmp
 *.swp
