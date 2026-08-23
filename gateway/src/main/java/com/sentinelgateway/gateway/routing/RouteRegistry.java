@@ -2,36 +2,42 @@ package com.sentinelgateway.gateway.routing;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-memory registry of active route definitions.
+ * In-memory registry of active route definitions — the single source of truth
+ * for routing decisions inside the gateway process.
  *
- * Phase 2: routes are loaded once at startup from configuration.
- * Future phases will add:
- *  - Admin API to add/update/disable routes at runtime (Phase 17)
- *  - PostgreSQL persistence for durable route storage (Phase 6+)
- *  - Kafka event publishing on route changes (Phase 13+)
+ * Phase 1: populated at startup from YAML (RouteDefinitionProperties).
+ * Phase 2: populated from the database by RouteService, mutated at runtime
+ *          via Admin API CRUD operations.
  *
- * The registry is the single source of truth for route decisions within
- * the gateway process. All filters that need to know about a route should
- * consult this registry rather than re-reading configuration.
+ * All mutating methods are thread-safe via ConcurrentHashMap.
  */
 @Component
 public class RouteRegistry {
 
-    private final Map<String, RouteDefinition> routesById;
+    private final ConcurrentHashMap<String, RouteDefinition> routesById = new ConcurrentHashMap<>();
 
-    public RouteRegistry(RouteDefinitionProperties properties) {
-        this.routesById = properties.toRouteDefinitions().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        RouteDefinition::routeId,
-                        Function.identity()
-                ));
+    public RouteRegistry() {}
+
+    /** Bulk-load routes (replaces entire registry). Called by RouteService at startup. */
+    public void loadAll(Collection<RouteDefinition> routes) {
+        routesById.clear();
+        routes.forEach(r -> routesById.put(r.routeId(), r));
+    }
+
+    /** Add or replace a single route definition. */
+    public void register(RouteDefinition route) {
+        routesById.put(route.routeId(), route);
+    }
+
+    /** Remove a route by ID. No-op if not present. */
+    public void deregister(String routeId) {
+        routesById.remove(routeId);
     }
 
     /** All registered routes (enabled and disabled). */
@@ -39,7 +45,7 @@ public class RouteRegistry {
         return List.copyOf(routesById.values());
     }
 
-    /** Only enabled routes. */
+    /** Only enabled routes — used by routing filters. */
     public List<RouteDefinition> enabledRoutes() {
         return routesById.values().stream()
                 .filter(RouteDefinition::enabled)

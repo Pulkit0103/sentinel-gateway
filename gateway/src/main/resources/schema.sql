@@ -22,3 +22,18 @@ CREATE TABLE IF NOT EXISTS security_policies (
     created_at               TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at               TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Phase 2: Persistent route definitions managed via Admin API
+CREATE TABLE IF NOT EXISTS routes (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    route_id          VARCHAR(128)  NOT NULL UNIQUE,
+    path              VARCHAR(256)  NOT NULL,
+    service_uri       VARCHAR(512)  NOT NULL,
+    methods           VARCHAR(128),
+    enabled           BOOLEAN       NOT NULL DEFAULT TRUE,
+    required_scopes   VARCHAR(512),
+    tenant_required   BOOLEAN       NOT NULL DEFAULT FALSE,
+    rate_limit_policy VARCHAR(64)   NOT NULL DEFAULT 'DEFAULT',
+    created_at        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
