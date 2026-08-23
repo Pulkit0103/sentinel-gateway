@@ -82,20 +82,41 @@ surefire-reports/
 docker-compose.override.yml
 docker-compose.local.yml
 
-# ─── Node / Admin UI (future) ─────────────────────────────────────────────────
+# ─── Node / Admin Dashboard ───────────────────────────────────────────────────
+node_modules/
+**/node_modules/
 admin-ui/node_modules/
 admin-ui/.next/
 admin-ui/out/
 admin-ui/.env
 admin-ui/.env.local
+admin-dashboard/node_modules/
+admin-dashboard/.next/
+admin-dashboard/out/
+admin-dashboard/.env
+admin-dashboard/.env.local
 
 # ─── Generated ────────────────────────────────────────────────────────────────
 generated/
 gen/
 
-# ─── Temporary ────────────────────────────────────────────────────────────────
+# ─── Claude Code (local AI assistant session data) ────────────────────────────
+.claude/
+
+# ─── Local push/automation scripts (contain PATs — never commit) ──────────────
+scripts/
+push-and-wiki.bat
+push-and-wiki.sh
+
+# ─── Temporary / scratch files ────────────────────────────────────────────────
 *.tmp
 *.swp
 *.swo
 *~
-*.txt
+CTemp*.txt
+branch-create.txt
+git-add.txt
+git-ops.txt
+maven-check.txt
+test-output.txt
+tool-check.txt
