@@ -6,6 +6,27 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.0] – 2026-08-24 — Phase 5: Traffic Splitting & Canary Routing
+
+### Added
+- `CanaryConfig` (POJO): per-route canary configuration holding `canaryUri` and `weight` (0–100)
+- `CanaryProperties` (`@Component`, `@ConfigurationProperties(prefix = "sentinel.canary")`): binds
+  `sentinel.canary.routes.<routeId>.*` YAML into a `Map<String, CanaryConfig>` — no DB changes needed
+- `CanaryRoutingFilter` (`GlobalFilter`, `Ordered.LOWEST_PRECEDENCE - 100`): for each request, looks
+  up the matched route in `CanaryProperties`; draws a random int 1–100 and, when it is ≤ `weight`,
+  rewrites `GATEWAY_REQUEST_URL_ATTR` to point at the canary backend (scheme + host + port replaced,
+  path preserved) and tags the exchange with `X-Canary=true` for observability
+- Integration tests: `CanaryRoutingFilterTest` (weight=100, all requests hit canary, 0 to stable)
+  and `CanaryRoutingZeroWeightTest` (weight=0, all requests hit stable, 0 to canary) — total suite
+  now 176 tests, 0 failures
+
+### Design notes
+- Canary config is runtime YAML only; reload via Spring Cloud Config or pod restart
+- Order `LOWEST_PRECEDENCE - 100` ensures the filter runs after route matching sets
+  `GATEWAY_ROUTE_ATTR` but before `NettyRoutingFilter` dispatches the actual HTTP call
+
+---
+
 ## [0.4.0] – 2026-08-24 — Phase 4: Request/Response Transformation
 
 ### Added
