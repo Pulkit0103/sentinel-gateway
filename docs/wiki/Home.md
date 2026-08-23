@@ -30,9 +30,27 @@ Client → TLS → Auth → AuthZ → Tenant → Policy → Threat → RateLimit
 | [Configuration Reference](Configuration-Reference) | All environment variables |
 | [CI/CD](CICD) | GitHub Actions pipeline |
 | [Development Guide](Development-Guide) | Contributing, testing, project structure |
+| [CHANGELOG](CHANGELOG) | Version history and feature additions |
 
 ## Project Status
 
-All **25 development phases** are complete. The project is production-ready for demo and portfolio purposes.
+### Phase 2 — Active (v0.2.0-SNAPSHOT)
+
+**Dynamic Admin CRUD + Route Persistence** — routes and policies are now fully
+manageable at runtime via REST API with no gateway restart required.
+
+| Feature | Status |
+|---------|--------|
+| Route CRUD (create/update/delete/enable/disable) | ✅ v0.2.0 |
+| Route persistence (PostgreSQL via R2DBC) | ✅ v0.2.0 |
+| Policy CRUD (create/update/delete) | ✅ v0.2.0 |
+| IP Blocklist management API | ✅ v0.2.0 |
+| Hot-reload via `RefreshRoutesEvent` | ✅ v0.2.0 |
+
+### Phase 1 — Complete (v0.1.0)
+
+All **25 original development phases** are complete, providing a production-grade
+zero-trust gateway with JWT/OIDC auth, RBAC, rate limiting, threat detection,
+audit logging, resilience, and full CI/CD pipeline.
 
 > **Note:** Threat detection is demonstrable WAF-style detection — not a replacement for a commercial WAF product.
