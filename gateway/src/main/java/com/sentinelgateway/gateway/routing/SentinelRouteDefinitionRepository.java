@@ -131,6 +131,17 @@ public class SentinelRouteDefinitionRepository implements RouteDefinitionReposit
         }
 
         def.setFilters(filters);
+
+        // Per-route timeout via route metadata — read by NettyRoutingFilter.
+        // NettyRoutingFilter.getLong() expects a Number (Long millis) for "response-timeout";
+        // it calls Duration.ofMillis() internally. Passing a Duration directly would cause
+        // toString() → parseLong() to throw NumberFormatException and silently fall back to
+        // the global timeout. "connect-timeout" expects an Integer (millis).
+        if (entity.getTimeoutMs() != null && entity.getTimeoutMs() > 0) {
+            def.getMetadata().put("response-timeout", entity.getTimeoutMs());
+            def.getMetadata().put("connect-timeout", (int) Math.min(entity.getTimeoutMs(), 3000L));
+        }
+
         return def;
     }
 }

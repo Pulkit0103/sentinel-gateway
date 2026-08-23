@@ -51,13 +51,14 @@ public class RouteDefinitionProperties {
         private List<String> allowedIps = new ArrayList<>();
         private List<String> blockedIps = new ArrayList<>();
         private Long maxBodyBytes;
+        private Long timeoutMs;
 
         public RouteDefinition toRouteDefinition() {
             return new RouteDefinition(
                     routeId, path, serviceUri, methods, enabled,
                     requiredScopes, tenantRequired, rateLimitPolicy,
                     stripPrefix, addRequestHeaders,
-                    allowedIps, blockedIps, maxBodyBytes);
+                    allowedIps, blockedIps, maxBodyBytes, timeoutMs);
         }
 
         // ── getters / setters ─────────────────────────────────────────────
@@ -99,5 +100,8 @@ public class RouteDefinitionProperties {
 
         public Long getMaxBodyBytes() { return maxBodyBytes; }
         public void setMaxBodyBytes(Long v) { this.maxBodyBytes = v; }
+
+        public Long getTimeoutMs() { return timeoutMs; }
+        public void setTimeoutMs(Long v) { this.timeoutMs = v; }
     }
 }

@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS routes (
     allowed_ips          VARCHAR(1024),
     blocked_ips          VARCHAR(1024),
     max_body_bytes       BIGINT,
+    timeout_ms           BIGINT,
     created_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

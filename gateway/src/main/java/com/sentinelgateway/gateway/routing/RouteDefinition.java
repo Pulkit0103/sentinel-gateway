@@ -30,6 +30,7 @@ public final class RouteDefinition {
     private final List<String> allowedIps;
     private final List<String> blockedIps;
     private final Long maxBodyBytes;
+    private final Long timeoutMs;
 
     public RouteDefinition(
             String routeId,
@@ -89,6 +90,25 @@ public final class RouteDefinition {
             List<String> allowedIps,
             List<String> blockedIps,
             Long maxBodyBytes) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy,
+                stripPrefix, addRequestHeaders, allowedIps, blockedIps, maxBodyBytes, null);
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders,
+            List<String> allowedIps,
+            List<String> blockedIps,
+            Long maxBodyBytes,
+            Long timeoutMs) {
 
         this.routeId = Objects.requireNonNull(routeId, "routeId must not be null");
         this.path = Objects.requireNonNull(path, "path must not be null");
@@ -103,6 +123,7 @@ public final class RouteDefinition {
         this.allowedIps = allowedIps != null ? List.copyOf(allowedIps) : List.of();
         this.blockedIps = blockedIps != null ? List.copyOf(blockedIps) : List.of();
         this.maxBodyBytes = maxBodyBytes;
+        this.timeoutMs = timeoutMs;
     }
 
     public String routeId()         { return routeId; }
@@ -118,6 +139,7 @@ public final class RouteDefinition {
     public List<String> allowedIps() { return allowedIps; }
     public List<String> blockedIps() { return blockedIps; }
     public Long maxBodyBytes()       { return maxBodyBytes; }
+    public Long timeoutMs()          { return timeoutMs; }
 
     @Override
     public String toString() {

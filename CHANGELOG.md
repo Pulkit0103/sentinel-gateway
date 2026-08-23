@@ -6,6 +6,37 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.9.0] – 2026-08-24 — Phase 9: Per-Route Request Timeout
+
+### Added
+- `timeout_ms BIGINT` column added to the `routes` table (NULL = use global default) in both
+  `gateway/src/main/resources/schema.sql` and `gateway/src/test/resources/schema.sql`
+- `RouteEntity`: new `@Column("timeout_ms") Long timeoutMs` field with getter/setter;
+  `toDomain()` and `from()` propagate the value
+- `RouteDefinition`: new `timeoutMs()` accessor (nullable `Long`); added a 14-arg canonical
+  constructor; the 13-arg constructor delegates to it with `null`, preserving backward compat
+- `RouteDefinitionProperties.RouteEntry`: new `timeoutMs` (`Long`) field bound from
+  `sentinel.gateway.routes[N].timeout-ms`; `toRouteDefinition()` passes it through
+- `RouteService.update()`: propagates `timeoutMs` on route updates
+- `SentinelRouteDefinitionRepository.toGatewayDefinition()`: when `entity.getTimeoutMs() != null
+  && > 0`, sets route metadata `"response-timeout"` (Long millis, read by `NettyRoutingFilter`
+  which converts it internally via `Duration.ofMillis()`) and `"connect-timeout"` (int millis,
+  capped at 3000ms); routes without a timeout use the global `spring.cloud.gateway.httpclient.response-timeout`
+- Integration test `RouteTimeoutTest` (2 tests): route `/api/slow/**` with `timeout-ms=500` and
+  WireMock upstream delayed 2000ms → gateway returns 504; route `/api/fast/**` with `timeout-ms=5000`
+  and instant upstream → 200 OK — total suite now 189 tests, 0 failures
+
+### Design notes
+- Per-route timeout is wired exclusively via route metadata, not a `GatewayFilter`, because
+  `NettyRoutingFilter` reads `"response-timeout"` from route metadata to override the global HTTP
+  client timeout for that specific upstream call
+- The metadata value must be a `Long` (milliseconds), not a `java.time.Duration`; passing a
+  `Duration` causes `NettyRoutingFilter.getLong()` to call `toString()` → `parseLong()` which
+  throws `NumberFormatException` (e.g. `"PT0.5S"` is not a long), silently falling back to the
+  global timeout — a subtle Spring Cloud Gateway API pitfall
+
+---
+
 ## [0.8.0] – 2026-08-24 — Phase 8: Per-Route Request Size Limiting
 
 ### Added
