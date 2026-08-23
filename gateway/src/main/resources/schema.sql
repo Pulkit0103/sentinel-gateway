@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS security_policies (
 
 -- Phase 2: Persistent route definitions managed via Admin API
 -- Phase 4: Added strip_prefix and add_request_headers columns
+-- Phase 7: Added allowed_ips and blocked_ips columns for per-route IP filtering
 CREATE TABLE IF NOT EXISTS routes (
     id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
     route_id             VARCHAR(128)  NOT NULL UNIQUE,
@@ -37,6 +38,8 @@ CREATE TABLE IF NOT EXISTS routes (
     rate_limit_policy    VARCHAR(64)   NOT NULL DEFAULT 'DEFAULT',
     strip_prefix         SMALLINT      NOT NULL DEFAULT 0,
     add_request_headers  VARCHAR(1024),
+    allowed_ips          VARCHAR(1024),
+    blocked_ips          VARCHAR(1024),
     created_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

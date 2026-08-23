@@ -118,6 +118,8 @@ public class RouteService implements ApplicationRunner {
                     entity.setRateLimitPolicy(updated.rateLimitPolicy());
                     entity.setStripPrefix(updated.stripPrefix());
                     entity.setAddRequestHeaders(RouteEntity.from(updated).getAddRequestHeaders());
+                    entity.setAllowedIps(RouteEntity.from(updated).getAllowedIps());
+                    entity.setBlockedIps(RouteEntity.from(updated).getBlockedIps());
                     entity.setUpdatedAt(LocalDateTime.now());
                     return repository.save(entity);
                 })

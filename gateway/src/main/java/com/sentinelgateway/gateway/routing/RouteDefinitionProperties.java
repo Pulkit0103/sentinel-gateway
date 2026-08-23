@@ -48,12 +48,15 @@ public class RouteDefinitionProperties {
         private String rateLimitPolicy = "DEFAULT";
         private int stripPrefix = 0;
         private Map<String, String> addRequestHeaders = new HashMap<>();
+        private List<String> allowedIps = new ArrayList<>();
+        private List<String> blockedIps = new ArrayList<>();
 
         public RouteDefinition toRouteDefinition() {
             return new RouteDefinition(
                     routeId, path, serviceUri, methods, enabled,
                     requiredScopes, tenantRequired, rateLimitPolicy,
-                    stripPrefix, addRequestHeaders);
+                    stripPrefix, addRequestHeaders,
+                    allowedIps, blockedIps);
         }
 
         // ── getters / setters ─────────────────────────────────────────────
@@ -86,5 +89,11 @@ public class RouteDefinitionProperties {
 
         public Map<String, String> getAddRequestHeaders() { return addRequestHeaders; }
         public void setAddRequestHeaders(Map<String, String> v) { this.addRequestHeaders = v != null ? v : new HashMap<>(); }
+
+        public List<String> getAllowedIps() { return allowedIps; }
+        public void setAllowedIps(List<String> v) { this.allowedIps = v != null ? v : new ArrayList<>(); }
+
+        public List<String> getBlockedIps() { return blockedIps; }
+        public void setBlockedIps(List<String> v) { this.blockedIps = v != null ? v : new ArrayList<>(); }
     }
 }

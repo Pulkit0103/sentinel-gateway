@@ -52,6 +52,12 @@ public class RouteEntity {
     @Column("add_request_headers")
     private String addRequestHeaders;
 
+    @Column("allowed_ips")
+    private String allowedIps;
+
+    @Column("blocked_ips")
+    private String blockedIps;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 
@@ -80,6 +86,14 @@ public class RouteEntity {
         return result;
     }
 
+    public List<String> allowedIpList() {
+        return splitOrEmpty(allowedIps);
+    }
+
+    public List<String> blockedIpList() {
+        return splitOrEmpty(blockedIps);
+    }
+
     public RouteDefinition toDomain() {
         return new RouteDefinition(
                 routeId, path, serviceUri,
@@ -87,7 +101,9 @@ public class RouteEntity {
                 requiredScopeList(), tenantRequired,
                 rateLimitPolicy != null ? rateLimitPolicy : "DEFAULT",
                 stripPrefix,
-                addRequestHeaderMap()
+                addRequestHeaderMap(),
+                allowedIpList(),
+                blockedIpList()
         );
     }
 
@@ -103,6 +119,8 @@ public class RouteEntity {
         e.rateLimitPolicy = d.rateLimitPolicy();
         e.stripPrefix = d.stripPrefix();
         e.addRequestHeaders = encodeHeaders(d.addRequestHeaders());
+        e.allowedIps = joinOrNull(d.allowedIps());
+        e.blockedIps = joinOrNull(d.blockedIps());
         e.createdAt = LocalDateTime.now();
         e.updatedAt = LocalDateTime.now();
         return e;
@@ -153,6 +171,10 @@ public class RouteEntity {
     public void setStripPrefix(int v)          { this.stripPrefix = v; }
     public String getAddRequestHeaders()       { return addRequestHeaders; }
     public void setAddRequestHeaders(String v) { this.addRequestHeaders = v; }
+    public String getAllowedIps()              { return allowedIps; }
+    public void setAllowedIps(String v)        { this.allowedIps = v; }
+    public String getBlockedIps()              { return blockedIps; }
+    public void setBlockedIps(String v)        { this.blockedIps = v; }
     public LocalDateTime getCreatedAt()        { return createdAt; }
     public void setCreatedAt(LocalDateTime v)  { this.createdAt = v; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }

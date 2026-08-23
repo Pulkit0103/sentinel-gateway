@@ -6,6 +6,45 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.7.0] – 2026-08-24 — Phase 7: Per-Route IP Allowlist/Denylist
+
+### Added
+- `IpFilterProperties` (`@ConfigurationProperties("sentinel.ip-filter")`): global `enabled` flag
+  (default `true`) for the IP filtering feature
+- `IpFilterService`: stateless utility bean providing `isAllowed(clientIp, allowedCidrs, blockedCidrs)`;
+  supports exact-IP and CIDR-range matching via `java.net.InetAddress`; allowlist checked first,
+  denylist second, empty lists mean no restriction
+- `IpFilterGlobalFilter` (`GlobalFilter`, `Ordered.HIGHEST_PRECEDENCE + 1`): runs before all other
+  GlobalFilters (JwtRevocationFilter at +5, JwtHeadersFilter at +10); resolves client IP from
+  `X-Forwarded-For` header (first value) falling back to the TCP remote address; looks up the
+  matched route's `allowedIps`/`blockedIps` from `RouteRepository`; returns 403 Forbidden when
+  blocked; uses the `thenReturn`/`defaultIfEmpty`/`flatMap` pattern to avoid Mono<Void>
+  double-subscription bug
+- `RouteEntity`: new `@Column("allowed_ips")` and `@Column("blocked_ips")` fields with
+  `allowedIpList()` and `blockedIpList()` helper methods (comma-split + trim)
+- `RouteDefinition`: new `allowedIps()` and `blockedIps()` accessors; added full-arg constructor
+  alongside existing 10-arg constructor (which delegates to it with empty lists)
+- `RouteDefinitionProperties.RouteEntry`: new `allowedIps` / `blockedIps` `List<String>` fields
+  bound from `sentinel.gateway.routes[N].allowed-ips` / `blocked-ips`
+- `RouteService.update()`: propagates `allowedIps` and `blockedIps` on route updates
+- DB schema (`gateway/src/main/resources/schema.sql` and `gateway/src/test/resources/schema.sql`):
+  added `allowed_ips VARCHAR(1024)` and `blocked_ips VARCHAR(1024)` columns to the `routes` table
+- Integration tests: `IpFilterBlocklistTest` (2 tests: blocked IP → 403, non-blocked IP → 200) and
+  `IpFilterAllowlistTest` (2 tests: IP inside allowed CIDR → 200, IP outside → 403) — total suite
+  now 185 tests, 0 failures
+
+### Design notes
+- `IpFilterGlobalFilter` is a `GlobalFilter` (not `WebFilter`) because at WebFilter time the route
+  has not yet been matched by `RoutePredicateHandlerMapping`; at `HIGHEST_PRECEDENCE + 1` the
+  `GATEWAY_ROUTE_ATTR` exchange attribute is already populated
+- Client IP resolution honours `X-Forwarded-For` for reverse-proxy deployments; operators deploying
+  behind a load balancer should ensure the LB sets this header and the gateway is not directly
+  internet-facing (to prevent header spoofing)
+- Fail-open: if the route is not found in the DB (e.g., during a DB hiccup), the request is allowed
+  through to avoid false-positive 403s during transient outages
+
+---
+
 ## [0.6.0] – 2026-08-24 — Phase 6: JWT Revocation + Token Introspection
 
 ### Added
