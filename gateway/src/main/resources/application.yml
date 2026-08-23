@@ -109,7 +109,7 @@ info:
     name: Sentinel Gateway
     version: 0.1.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 3 - OAuth2/OIDC/Keycloak
+    phase: Phase 2 - Dynamic Admin CRUD + Route Persistence
 
 # ─── Route Definitions ────────────────────────────────────────────────────────
 # Each entry maps to a RouteDefinition domain object.
