@@ -12,6 +12,9 @@ COPY gateway/src /build/gateway/src
 
 # Minimal hello-service POM needed for multi-module resolution
 COPY test-services/hello-service/pom.xml /build/test-services/hello-service/pom.xml
+COPY test-services/user-service/pom.xml /build/test-services/user-service/pom.xml
+COPY test-services/order-service/pom.xml /build/test-services/order-service/pom.xml
+COPY test-services/payment-service/pom.xml /build/test-services/payment-service/pom.xml
 
 # Resolve dependencies
 RUN --mount=type=cache,target=/root/.m2 \
