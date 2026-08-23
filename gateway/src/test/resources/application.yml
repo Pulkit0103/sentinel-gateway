@@ -1,0 +1,110 @@
+sentinel:
+  analytics:
+    enabled: false
+
+  audit:
+    kafka:
+      enabled: false
+
+  threat-detection:
+    enabled: false
+    log-threshold: 25
+    block-threshold: 60
+    alert-threshold: 90
+    blocked-ips: []
+
+  request-signing:
+    enabled: false
+    timestamp-tolerance-seconds: 300
+    nonce-ttl-seconds: 600
+    shared-secret: test-shared-secret
+
+  quota:
+    enabled: false
+
+  rate-limit:
+    enabled: false
+    policies:
+      ANONYMOUS:
+        requests-per-minute: 100
+      USER:
+        requests-per-minute: 1000
+      PREMIUM:
+        requests-per-minute: 10000
+      DEFAULT:
+        requests-per-minute: 1000
+
+  security:
+    jwt:
+      issuer: http://localhost:8180/realms/sentinel
+
+  resilience:
+    enabled: true
+    retry:
+      enabled: true
+      attempts: 2
+      safe-methods: [GET, HEAD]
+    circuit-breaker:
+      enabled: true
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Fallback JWKS URI for tests that don't set a @DynamicPropertySource.
+          # Points to a local WireMock-style endpoint; tests that need JWT create
+          # their own WireMock and override this via @DynamicPropertySource.
+          jwk-set-uri: http://localhost:9999/jwks-unused
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  r2dbc:
+    url: r2dbc:h2:mem:///sentinel;DB_CLOSE_DELAY=-1
+  sql:
+    init:
+      mode: always
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 30000ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    redis:
+      enabled: false
+
+resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 30s
+        cancelRunningFuture: false
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true

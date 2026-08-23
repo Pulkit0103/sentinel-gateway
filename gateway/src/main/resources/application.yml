@@ -107,9 +107,9 @@ management:
 info:
   app:
     name: Sentinel Gateway
-    version: 0.1.0-SNAPSHOT
+    version: 0.3.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 2 - Dynamic Admin CRUD + Route Persistence
+    phase: Phase 3 - Analytics & Usage Reporting
 
 # ─── Route Definitions ────────────────────────────────────────────────────────
 # Each entry maps to a RouteDefinition domain object.
@@ -119,6 +119,11 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  analytics:
+    enabled: true
+    retention-days: 7
+    top-n: 10
+
   audit:
     kafka:
       enabled: false  # set to true when Kafka is available (Docker/K8s)

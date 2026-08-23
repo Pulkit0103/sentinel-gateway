@@ -72,7 +72,15 @@ public class SentinelRouteDefinitionRepository implements RouteDefinitionReposit
         if (entity.getMethods() != null && !entity.getMethods().isBlank()) {
             var methodPredicate = new PredicateDefinition();
             methodPredicate.setName("Method");
-            methodPredicate.setArgs(Map.of("_genkey_0", entity.getMethods()));
+            // Method predicate uses GATHER_LIST shortcut: each method must be its own _genkey_N arg.
+            // A single "_genkey_0=GET,POST" is NOT split by Spring Cloud Gateway — each method
+            // needs a separate numbered key for the predicate to match all listed methods.
+            String[] methods = entity.getMethods().split(",");
+            Map<String, String> methodArgs = new LinkedHashMap<>();
+            for (int i = 0; i < methods.length; i++) {
+                methodArgs.put("_genkey_" + i, methods[i].trim());
+            }
+            methodPredicate.setArgs(methodArgs);
             predicates.add(methodPredicate);
         }
         def.setPredicates(predicates);

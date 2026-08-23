@@ -1,0 +1,60 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+
+---
+
+## [0.3.0] – 2026-08-24 — Phase 3: Analytics & Usage Reporting
+
+### Added
+- `AnalyticsService` interface with Redis-backed (`RedisAnalyticsService`) and no-op implementations
+- `AnalyticsConfig`: conditional bean registration via `@ConditionalOnProperty` / `@ConditionalOnMissingBean`
+- `AnalyticsRecord` value type captured per request (route, tenant, outcome, status, method, duration)
+- `AuditLoggingFilter` now records analytics in parallel with audit events (`Mono.when`)
+- REST analytics endpoints: `/analytics/summary`, `/analytics/routes`, `/analytics/tenants`,
+  `/analytics/timeline`, `/analytics/security`
+- Hourly Redis key bucketing for time-series data (`sentinel:analytics:{date}:{hour}`)
+- Full integration test suite: `RedisAnalyticsServiceTest`, `AnalyticsControllerTest`,
+  `AnalyticsIntegrationTest` (166 tests, 0 failures)
+- Test infrastructure: `src/test/resources/schema.sql` (DROP+CREATE for H2 isolation),
+  `src/test/resources/application.yml` (complete test overrides)
+
+### Fixed
+- Method predicate in `SentinelRouteDefinitionRepository` now emits separate `_genkey_N` args per
+  HTTP method (fixes multi-method route matching, e.g. `GET,POST`)
+- Added `-parameters` compiler flag to resolve `@PathVariable` names in Spring WebFlux controllers
+- Resilience4j `TimeLimiter` configured to 30 s in tests (was 1 s default, causing 504 timeouts)
+- H2 shared in-memory database contamination across Spring test contexts: test schema.sql
+  now drops and recreates tables on each new context
+
+### Changed
+- `AuditLoggingFilter`: constructor now injects `AnalyticsService`; publishes analytics and
+  audit events in parallel
+
+---
+
+## [0.2.0] – Phase 2: Route Persistence & Admin API
+
+### Added
+- R2DBC H2/PostgreSQL persistence for routes and security policies
+- Admin REST API: CRUD for routes (`/admin/routes`) and policies (`/admin/policies`)
+- `RouteService.run()` seeds YAML routes into DB on first startup; DB authoritative thereafter
+- `SentinelRouteDefinitionRepository`: reads routes from DB, applies Retry + CircuitBreaker filters
+- API key authentication: `ApiKeyAuthenticationWebFilter`, `ApiKeyService`, `ApiKeyRepository`
+- Route-level RBAC: `RouteAuthorizationFilter` checks JWT/API-key scopes against route requirements
+
+---
+
+## [0.1.0] – Phase 1: Foundation
+
+### Added
+- Spring Cloud Gateway scaffold with JWT authentication (Keycloak JWKS)
+- Request ID injection (`X-Request-ID`), tenant isolation header
+- Structured audit logging filter (`AuditLoggingFilter`)
+- Observability: Micrometer metrics, Prometheus endpoint, `GatewayMetricsFilter`
+- Threat detection filter (SQL injection, XSS, path traversal, command injection)
+- HMAC request signing verification
+- Rate limiting, quota management
+- Resilience4j circuit breaker + retry
