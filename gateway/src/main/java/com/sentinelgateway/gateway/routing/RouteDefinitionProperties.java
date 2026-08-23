@@ -4,7 +4,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reads route definitions from {@code sentinel.gateway.routes[*]} in application.yml
@@ -44,11 +46,14 @@ public class RouteDefinitionProperties {
         private List<String> requiredScopes = new ArrayList<>();
         private boolean tenantRequired = false;
         private String rateLimitPolicy = "DEFAULT";
+        private int stripPrefix = 0;
+        private Map<String, String> addRequestHeaders = new HashMap<>();
 
         public RouteDefinition toRouteDefinition() {
             return new RouteDefinition(
                     routeId, path, serviceUri, methods, enabled,
-                    requiredScopes, tenantRequired, rateLimitPolicy);
+                    requiredScopes, tenantRequired, rateLimitPolicy,
+                    stripPrefix, addRequestHeaders);
         }
 
         // ── getters / setters ─────────────────────────────────────────────
@@ -75,5 +80,11 @@ public class RouteDefinitionProperties {
 
         public String getRateLimitPolicy() { return rateLimitPolicy; }
         public void setRateLimitPolicy(String v) { this.rateLimitPolicy = v; }
+
+        public int getStripPrefix() { return stripPrefix; }
+        public void setStripPrefix(int v) { this.stripPrefix = v; }
+
+        public Map<String, String> getAddRequestHeaders() { return addRequestHeaders; }
+        public void setAddRequestHeaders(Map<String, String> v) { this.addRequestHeaders = v != null ? v : new HashMap<>(); }
     }
 }

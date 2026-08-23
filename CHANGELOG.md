@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.4.0] – 2026-08-24 — Phase 4: Request/Response Transformation
+
+### Added
+- `RequestSanitizationFilter` (`@Order(HIGHEST_PRECEDENCE + 2)`): strips client-supplied identity
+  headers (`X-User-Id`, `X-Tenant-Id`, `X-User-Roles`, `X-Auth-Type`, `X-Internal-*`) before
+  `JwtHeadersFilter` runs, closing the header-injection attack surface
+- `ResponseHeadersFilter` (`GlobalFilter`, `LOWEST_PRECEDENCE - 10`): removes information-leaking
+  response headers (`Server`, `X-Powered-By`, `Via`) from upstream responses
+- `TransformProperties` (`@ConfigurationProperties(prefix = "sentinel.transform")`): configurable
+  header strip lists
+- Route-level `strip_prefix` (DB column + YAML entry): `StripPrefix` filter wired per-route in
+  `SentinelRouteDefinitionRepository`
+- Route-level `add_request_headers` (DB column + YAML entry): `AddRequestHeader` filters wired
+  per-route in `SentinelRouteDefinitionRepository`
+- Integration tests: `RequestSanitizationFilterTest` (3), `ResponseHeadersFilterTest` (3),
+  `RouteTransformationTest` (2) — total suite now 174 tests, 0 failures
+
+### Fixed
+- Header injection: client-supplied `X-User-Id` can no longer shadow the gateway-verified identity
+  header (was possible because `JwtHeadersFilter` uses `.header()` which APPENDS, not replaces)
+
+---
+
 ## [0.3.0] – 2026-08-24 — Phase 3: Analytics & Usage Reporting
 
 ### Added

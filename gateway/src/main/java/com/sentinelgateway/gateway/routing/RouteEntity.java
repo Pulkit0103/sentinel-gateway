@@ -6,13 +6,15 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Persistent route definition stored in the {@code routes} table.
  *
  * Methods and requiredScopes are stored as comma-separated strings;
- * use the list-returning helpers for business logic.
+ * addRequestHeaders is stored as comma-separated key=value pairs.
  */
 @Table("routes")
 public class RouteEntity {
@@ -44,6 +46,12 @@ public class RouteEntity {
     @Column("rate_limit_policy")
     private String rateLimitPolicy = "DEFAULT";
 
+    @Column("strip_prefix")
+    private int stripPrefix = 0;
+
+    @Column("add_request_headers")
+    private String addRequestHeaders;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 
@@ -60,12 +68,26 @@ public class RouteEntity {
         return splitOrEmpty(requiredScopes);
     }
 
+    public Map<String, String> addRequestHeaderMap() {
+        if (addRequestHeaders == null || addRequestHeaders.isBlank()) return Map.of();
+        Map<String, String> result = new LinkedHashMap<>();
+        for (String pair : addRequestHeaders.split(",")) {
+            int eq = pair.indexOf('=');
+            if (eq > 0) {
+                result.put(pair.substring(0, eq).trim(), pair.substring(eq + 1).trim());
+            }
+        }
+        return result;
+    }
+
     public RouteDefinition toDomain() {
         return new RouteDefinition(
                 routeId, path, serviceUri,
                 methodList(), enabled,
                 requiredScopeList(), tenantRequired,
-                rateLimitPolicy != null ? rateLimitPolicy : "DEFAULT"
+                rateLimitPolicy != null ? rateLimitPolicy : "DEFAULT",
+                stripPrefix,
+                addRequestHeaderMap()
         );
     }
 
@@ -79,6 +101,8 @@ public class RouteEntity {
         e.requiredScopes = joinOrNull(d.requiredScopes());
         e.tenantRequired = d.tenantRequired();
         e.rateLimitPolicy = d.rateLimitPolicy();
+        e.stripPrefix = d.stripPrefix();
+        e.addRequestHeaders = encodeHeaders(d.addRequestHeaders());
         e.createdAt = LocalDateTime.now();
         e.updatedAt = LocalDateTime.now();
         return e;
@@ -95,6 +119,16 @@ public class RouteEntity {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
+    }
+
+    private static String encodeHeaders(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder();
+        headers.forEach((k, v) -> {
+            if (sb.length() > 0) sb.append(',');
+            sb.append(k).append('=').append(v);
+        });
+        return sb.toString();
     }
 
     public Long getId()                        { return id; }
@@ -115,6 +149,10 @@ public class RouteEntity {
     public void setTenantRequired(boolean v)   { this.tenantRequired = v; }
     public String getRateLimitPolicy()         { return rateLimitPolicy; }
     public void setRateLimitPolicy(String v)   { this.rateLimitPolicy = v; }
+    public int getStripPrefix()                { return stripPrefix; }
+    public void setStripPrefix(int v)          { this.stripPrefix = v; }
+    public String getAddRequestHeaders()       { return addRequestHeaders; }
+    public void setAddRequestHeaders(String v) { this.addRequestHeaders = v; }
     public LocalDateTime getCreatedAt()        { return createdAt; }
     public void setCreatedAt(LocalDateTime v)  { this.createdAt = v; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }

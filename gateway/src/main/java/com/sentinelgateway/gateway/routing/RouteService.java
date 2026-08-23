@@ -116,6 +116,8 @@ public class RouteService implements ApplicationRunner {
                     entity.setRequiredScopes(updated.requiredScopes().isEmpty() ? null : String.join(",", updated.requiredScopes()));
                     entity.setTenantRequired(updated.tenantRequired());
                     entity.setRateLimitPolicy(updated.rateLimitPolicy());
+                    entity.setStripPrefix(updated.stripPrefix());
+                    entity.setAddRequestHeaders(RouteEntity.from(updated).getAddRequestHeaders());
                     entity.setUpdatedAt(LocalDateTime.now());
                     return repository.save(entity);
                 })

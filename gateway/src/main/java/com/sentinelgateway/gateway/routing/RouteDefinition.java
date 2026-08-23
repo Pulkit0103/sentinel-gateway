@@ -1,6 +1,7 @@
 package com.sentinelgateway.gateway.routing;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -24,6 +25,8 @@ public final class RouteDefinition {
     private final List<String> requiredScopes;
     private final boolean tenantRequired;
     private final String rateLimitPolicy;
+    private final int stripPrefix;
+    private final Map<String, String> addRequestHeaders;
 
     public RouteDefinition(
             String routeId,
@@ -34,6 +37,20 @@ public final class RouteDefinition {
             List<String> requiredScopes,
             boolean tenantRequired,
             String rateLimitPolicy) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy, 0, Map.of());
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders) {
 
         this.routeId = Objects.requireNonNull(routeId, "routeId must not be null");
         this.path = Objects.requireNonNull(path, "path must not be null");
@@ -43,6 +60,8 @@ public final class RouteDefinition {
         this.requiredScopes = requiredScopes != null ? List.copyOf(requiredScopes) : List.of();
         this.tenantRequired = tenantRequired;
         this.rateLimitPolicy = rateLimitPolicy != null ? rateLimitPolicy : "DEFAULT";
+        this.stripPrefix = stripPrefix;
+        this.addRequestHeaders = addRequestHeaders != null ? Map.copyOf(addRequestHeaders) : Map.of();
     }
 
     public String routeId()         { return routeId; }
@@ -53,6 +72,8 @@ public final class RouteDefinition {
     public List<String> requiredScopes() { return requiredScopes; }
     public boolean tenantRequired() { return tenantRequired; }
     public String rateLimitPolicy() { return rateLimitPolicy; }
+    public int stripPrefix()        { return stripPrefix; }
+    public Map<String, String> addRequestHeaders() { return addRequestHeaders; }
 
     @Override
     public String toString() {

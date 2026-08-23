@@ -107,9 +107,9 @@ management:
 info:
   app:
     name: Sentinel Gateway
-    version: 0.3.0-SNAPSHOT
+    version: 0.4.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 3 - Analytics & Usage Reporting
+    phase: Phase 4 - Request/Response Transformation
 
 # ─── Route Definitions ────────────────────────────────────────────────────────
 # Each entry maps to a RouteDefinition domain object.
@@ -119,6 +119,17 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  transform:
+    sanitize-request-headers:
+      - X-User-Id
+      - X-Tenant-Id
+      - X-User-Roles
+      - X-Auth-Type
+    remove-response-headers:
+      - Server
+      - X-Powered-By
+      - Via
+
   analytics:
     enabled: true
     retention-days: 7

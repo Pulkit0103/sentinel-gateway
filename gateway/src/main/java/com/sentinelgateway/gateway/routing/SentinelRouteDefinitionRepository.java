@@ -87,6 +87,23 @@ public class SentinelRouteDefinitionRepository implements RouteDefinitionReposit
 
         List<FilterDefinition> filters = new ArrayList<>();
 
+        if (entity.getStripPrefix() > 0) {
+            var stripPrefix = new FilterDefinition();
+            stripPrefix.setName("StripPrefix");
+            stripPrefix.setArgs(Map.of("parts", String.valueOf(entity.getStripPrefix())));
+            filters.add(stripPrefix);
+        }
+
+        entity.addRequestHeaderMap().forEach((name, value) -> {
+            var addHeader = new FilterDefinition();
+            addHeader.setName("AddRequestHeader");
+            Map<String, String> headerArgs = new LinkedHashMap<>();
+            headerArgs.put("name", name);
+            headerArgs.put("value", value);
+            addHeader.setArgs(headerArgs);
+            filters.add(addHeader);
+        });
+
         if (resilience.isEnabled() && resilience.getRetry().isEnabled()
                 && resilience.getRetry().getAttempts() > 0) {
             var retry = new FilterDefinition();
