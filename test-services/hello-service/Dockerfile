@@ -8,7 +8,11 @@ COPY pom.xml /build/parent-pom.xml
 COPY test-services/hello-service/pom.xml /build/test-services/hello-service/pom.xml
 COPY test-services/hello-service/src /build/test-services/hello-service/src
 
+# All sibling module POMs needed for multi-module parent POM resolution
 COPY gateway/pom.xml /build/gateway/pom.xml
+COPY test-services/user-service/pom.xml /build/test-services/user-service/pom.xml
+COPY test-services/order-service/pom.xml /build/test-services/order-service/pom.xml
+COPY test-services/payment-service/pom.xml /build/test-services/payment-service/pom.xml
 
 RUN --mount=type=cache,target=/root/.m2 \
     cp /build/parent-pom.xml /build/pom.xml && \
