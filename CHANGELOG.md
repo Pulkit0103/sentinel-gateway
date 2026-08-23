@@ -6,6 +6,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.0] – 2026-08-24 — Phase 8: Per-Route Request Size Limiting
+
+### Added
+- `max_body_bytes BIGINT` column added to the `routes` table (NULL = no limit) in both
+  `gateway/src/main/resources/schema.sql` and `gateway/src/test/resources/schema.sql`
+- `RouteEntity`: new `@Column("max_body_bytes") Long maxBodyBytes` field with getter/setter;
+  `toDomain()` and `from()` propagate the value
+- `RouteDefinition`: new `maxBodyBytes()` accessor (nullable `Long`); added a 13-arg canonical
+  constructor; all shorter constructors delegate through the chain, preserving backward compat
+- `RouteDefinitionProperties.RouteEntry`: new `maxBodyBytes` (`Long`) field bound from
+  `sentinel.gateway.routes[N].max-body-bytes`; `toRouteDefinition()` passes it through
+- `RouteService.update()`: propagates `maxBodyBytes` on route updates
+- `SentinelRouteDefinitionRepository.toGatewayDefinition()`: when `entity.getMaxBodyBytes() != null
+  && > 0`, adds a Spring Cloud Gateway `RequestSize` filter with `maxSize={N}B`; routes without
+  the field set receive no size limit
+- Integration test `RequestSizeLimitTest` (2 tests): route `/api/size/**` with `max-body-bytes=100`;
+  50-byte body → 200 OK; 200-byte body → 413 Payload Too Large — total suite now 187 tests, 0 failures
+
+### Design notes
+- The `RequestSize` GatewayFilter is wired per-route at route-definition time (inside
+  `SentinelRouteDefinitionRepository`), so each route gets its own independent limit
+- The `DataSize` argument format used by `RequestSizeGatewayFilterFactory` is `"{N}B"` for bytes;
+  larger units (`KB`, `MB`) are also accepted but byte precision is used here for correctness
+- Routes without `max_body_bytes` set (NULL) receive no request-size filter, preserving the existing
+  Spring Cloud Gateway default behaviour (no client-side body-size enforcement)
+
+---
+
 ## [0.7.0] – 2026-08-24 — Phase 7: Per-Route IP Allowlist/Denylist
 
 ### Added

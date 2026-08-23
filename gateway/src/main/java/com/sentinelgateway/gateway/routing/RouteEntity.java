@@ -58,6 +58,9 @@ public class RouteEntity {
     @Column("blocked_ips")
     private String blockedIps;
 
+    @Column("max_body_bytes")
+    private Long maxBodyBytes;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 
@@ -103,7 +106,8 @@ public class RouteEntity {
                 stripPrefix,
                 addRequestHeaderMap(),
                 allowedIpList(),
-                blockedIpList()
+                blockedIpList(),
+                maxBodyBytes
         );
     }
 
@@ -121,6 +125,7 @@ public class RouteEntity {
         e.addRequestHeaders = encodeHeaders(d.addRequestHeaders());
         e.allowedIps = joinOrNull(d.allowedIps());
         e.blockedIps = joinOrNull(d.blockedIps());
+        e.maxBodyBytes = d.maxBodyBytes();
         e.createdAt = LocalDateTime.now();
         e.updatedAt = LocalDateTime.now();
         return e;
@@ -175,6 +180,8 @@ public class RouteEntity {
     public void setAllowedIps(String v)        { this.allowedIps = v; }
     public String getBlockedIps()              { return blockedIps; }
     public void setBlockedIps(String v)        { this.blockedIps = v; }
+    public Long getMaxBodyBytes()              { return maxBodyBytes; }
+    public void setMaxBodyBytes(Long v)        { this.maxBodyBytes = v; }
     public LocalDateTime getCreatedAt()        { return createdAt; }
     public void setCreatedAt(LocalDateTime v)  { this.createdAt = v; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }

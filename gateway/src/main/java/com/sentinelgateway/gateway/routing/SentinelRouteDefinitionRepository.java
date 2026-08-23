@@ -116,6 +116,13 @@ public class SentinelRouteDefinitionRepository implements RouteDefinitionReposit
             filters.add(retry);
         }
 
+        if (entity.getMaxBodyBytes() != null && entity.getMaxBodyBytes() > 0) {
+            var requestSize = new FilterDefinition();
+            requestSize.setName("RequestSize");
+            requestSize.setArgs(Map.of("maxSize", entity.getMaxBodyBytes() + "B"));
+            filters.add(requestSize);
+        }
+
         if (resilience.isEnabled() && resilience.getCircuitBreaker().isEnabled()) {
             var cb = new FilterDefinition();
             cb.setName("CircuitBreaker");
