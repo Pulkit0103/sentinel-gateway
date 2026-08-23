@@ -105,6 +105,34 @@ Spring Cloud Gateway executes filters in order by priority. The Sentinel filter 
                        └─────────┘    └──────────┘
 ```
 
+## Dynamic Routing (Phase 2)
+
+Routes are now persisted in the `routes` table and managed entirely at runtime:
+
+```
+Admin API (POST /admin/routes)
+        │
+        ▼
+  RouteService.create()
+        │
+        ├──► RouteRepository.save()       ← persists to DB
+        ├──► RouteRegistry.register()     ← updates in-memory map (ConcurrentHashMap)
+        └──► RefreshRoutesEvent           ← Spring Cloud Gateway re-reads routes
+                    │
+                    ▼
+     SentinelRouteDefinitionRepository.getRouteDefinitions()
+                    │
+                    ▼
+         Spring Cloud Gateway route table updated
+```
+
+**Startup sequence:**
+1. `RouteService` checks if `routes` table is empty
+2. If empty: seeds from YAML (`sentinel.gateway.routes[*]`) — zero-migration adoption
+3. Loads all DB rows into `RouteRegistry` (in-memory)
+4. `SentinelRouteDefinitionRepository` serves enabled routes to Spring Cloud Gateway
+5. Resilience filters (CircuitBreaker, Retry) are applied per-route in the repository
+
 ## Key Design Decisions
 
 See [Architecture Decision Records](../adr/) for full rationale.
@@ -117,4 +145,6 @@ See [Architecture Decision Records](../adr/) for full rationale.
 | Rate-limit storage | Redis Lua | Distributed, atomic, race-free counter operations |
 | Audit pipeline | Kafka | Decouple audit writes; never block request path |
 | DB driver | R2DBC | Non-blocking reactive DB access (fits WebFlux model) |
+| Route storage (Phase 2) | PostgreSQL + RouteDefinitionRepository | Hot-reload without restart; Admin API managed |
+| Blocklist storage (Phase 2) | Redis Set | Survives restart; shared across clustered instances |
 | Retry safety | Idempotent methods only | Never retry POST or payment routes |
