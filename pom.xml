@@ -14,6 +14,9 @@
     <modules>
         <module>gateway</module>
         <module>test-services/hello-service</module>
+        <module>test-services/user-service</module>
+        <module>test-services/order-service</module>
+        <module>test-services/payment-service</module>
     </modules>
 
     <properties>

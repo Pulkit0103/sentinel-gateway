@@ -1,45 +1,261 @@
 server:
   port: ${GATEWAY_PORT:8080}
+  shutdown: graceful   # drain in-flight requests before JVM exit
 
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s   # match terminationGracePeriodSeconds in K8s
   application:
     name: sentinel-gateway
   main:
-    # Spring Cloud Gateway requires reactive web; block overriding to MVC
     web-application-type: reactive
+  cloud:
+    gateway:
+      httpclient:
+        # Global HTTP client timeouts; per-route sentinel.resilience.timeout-ms overrides the response timeout.
+        connect-timeout: 3000      # 3 s to establish TCP connection
+        response-timeout: 30000ms  # 30 s global response deadline (reduced per route via filter)
+    globalcors:
+      # Allow the admin dashboard (localhost:3001) to call the gateway from a browser.
+      # Preflight OPTIONS requests are also permitted in SecurityConfig.
+      add-to-simple-url-handler-mapping: true
+      corsConfigurations:
+        '[/**]':
+          allowedOrigins:
+            - "http://localhost:3001"
+          allowedMethods: [GET, POST, DELETE, PUT, PATCH, OPTIONS]
+          allowedHeaders: ["*"]
+          maxAge: 3600
+    discovery:
+      client:
+        simple:
+          # Static service instances for local dev / Docker Compose.
+          # In Kubernetes these are replaced by DNS-backed service entries
+          # auto-populated by spring-cloud-starter-kubernetes-client-all.
+          # Instance URIs accept env-var overrides for Docker Compose.
+          instances:
+            hello-service:
+              - uri: ${HELLO_SERVICE_URL:http://localhost:8081}
+            user-service:
+              - uri: ${USER_SERVICE_URL:http://localhost:8082}
+            order-service:
+              - uri: ${ORDER_SERVICE_URL:http://localhost:8083}
+            payment-service:
+              - uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
+  autoconfigure:
+    # 1. GatewayRedisAutoConfiguration — we supply our own rate limiter bean.
+    # 2. KafkaAutoConfiguration — we configure Kafka manually only when
+    #    sentinel.audit.kafka.enabled=true so Kafka absence never fails the context.
+    exclude:
+      - org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  r2dbc:
+    # In-memory H2 for local dev — override R2DBC_URL with PostgreSQL in prod/Docker
+    url: ${R2DBC_URL:r2dbc:h2:mem:///sentinel;DB_CLOSE_DELAY=-1}
+  sql:
+    init:
+      mode: always
+  data:
+    redis:
+      # Override REDIS_HOST / REDIS_PORT for Docker/K8s; defaults to localhost dev instance
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak JWKS endpoint — override with KEYCLOAK_JWKS_URI env var in Docker/K8s
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/sentinel/protocol/openid-connect/certs}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
       show-details: always
       show-components: always
+      # Liveness: JVM alive, Spring context started, not deadlocked
+      # Readiness: app ready to serve traffic (set to REFUSING_TRAFFIC during graceful shutdown)
+      # Both groups are required for Kubernetes liveness/readiness probes to work.
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+  health:
+    # Kubernetes liveness/readiness state contributors must be explicitly enabled
+    # so that /actuator/health/liveness and /actuator/health/readiness groups work.
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    # Redis is used for rate limiting only; rate limiting fails open when Redis is down.
+    # Excluding Redis from health rollup prevents an unavailable Redis from marking
+    # the gateway DOWN — the gateway can still serve traffic with rate limiting disabled.
+    redis:
+      enabled: false
   info:
     env:
       enabled: true
+  tracing:
+    sampling:
+      probability: 1.0  # 100% sampling; reduce in high-traffic prod environments
 
 info:
   app:
     name: Sentinel Gateway
     version: 0.1.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 1 - Bootstrap
+    phase: Phase 3 - OAuth2/OIDC/Keycloak
 
-# Sentinel Gateway application configuration.
-# Prefix: sentinel.gateway — avoids conflict with Spring Cloud's spring.cloud.gateway.* namespace.
-# The hello-service URL can be overridden via HELLO_SERVICE_URL without code changes.
+# ─── Route Definitions ────────────────────────────────────────────────────────
+# Each entry maps to a RouteDefinition domain object.
+# Disabled routes are not registered; requests to their paths return 404.
+# Method restrictions return 405 on mismatch.
+#
+# Future phases will move this to a database-backed RouteDefinitionRepository.
+# ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  audit:
+    kafka:
+      enabled: false  # set to true when Kafka is available (Docker/K8s)
+      topic: sentinel.audit.requests
+
+  threat-detection:
+    enabled: false  # set to true to enable WAF-style pattern detection
+    log-threshold: 25    # score >= this → LOG (pass with warning)
+    block-threshold: 60  # score >= this → BLOCK (400)
+    alert-threshold: 90  # score >= this → BLOCK + high-severity alert
+    blocked-ips: []
+
+  policy:
+    policies:
+      - policy-id: user-service-policy
+        route-id: user-service
+        require-mfa: false
+        request-signing-required: false
+        required-scopes: []
+        allowed-methods: [GET, POST, PUT, PATCH, DELETE]
+        rate-limit-policy: USER
+
+      - policy-id: order-service-policy
+        route-id: order-service
+        require-mfa: false
+        request-signing-required: false
+        required-scopes: []
+        allowed-methods: [GET, POST, PUT, PATCH, DELETE]
+        rate-limit-policy: USER
+
+      - policy-id: payment-service-policy
+        route-id: payment-service
+        require-mfa: false
+        request-signing-required: false
+        required-scopes: []
+        allowed-methods: [GET, POST]
+        rate-limit-policy: PREMIUM
+
+  request-signing:
+    enabled: false  # set to true to require HMAC signatures
+    timestamp-tolerance-seconds: 300
+    nonce-ttl-seconds: 600
+    shared-secret: ${HMAC_SHARED_SECRET:change-me-in-production}
+  quota:
+    enabled: false  # set to true when Redis is available
+    default-daily-limit: 100000
+    default-monthly-limit: 2000000
+  rate-limit:
+    enabled: false  # set to true when Redis is available (Docker/K8s)
+    policies:
+      ANONYMOUS:
+        requests-per-minute: 100
+      USER:
+        requests-per-minute: 1000
+      PREMIUM:
+        requests-per-minute: 10000
+      DEFAULT:
+        requests-per-minute: 1000
+  security:
+    jwt:
+      # Token issuer validated against every incoming JWT's `iss` claim.
+      # Must match the Keycloak realm URL exactly (scheme + host + port + path).
+      issuer: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/sentinel}
   gateway:
-    hello-service-url: ${HELLO_SERVICE_URL:http://localhost:8081}
+    routes:
+      - route-id: hello-service
+        path: /api/hello/**
+        service-uri: lb://hello-service
+        methods: [GET]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      - route-id: user-service
+        path: /api/users/**
+        service-uri: lb://user-service
+        methods: [GET, POST, PUT, PATCH, DELETE]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      - route-id: order-service
+        path: /api/orders/**
+        service-uri: lb://order-service
+        methods: [GET, POST, PUT, PATCH, DELETE]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      - route-id: payment-service
+        path: /api/payments/**
+        service-uri: lb://payment-service
+        methods: [GET, POST]
+        enabled: true
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+      # Example of a disabled route — demonstrates the disable feature.
+      # Requests to /api/legacy/** will receive 404.
+      - route-id: legacy-service
+        path: /api/legacy/**
+        service-uri: http://localhost:9999
+        methods: [GET]
+        enabled: false
+        required-scopes: []
+        tenant-required: false
+        rate-limit-policy: DEFAULT
+
+  resilience:
+    enabled: true  # set to false to disable all resilience filters globally
+    retry:
+      enabled: true
+      attempts: 2           # retries after the initial attempt; total = attempts+1
+      safe-methods: [GET, HEAD]
+    circuit-breaker:
+      enabled: true
+
+# ─── Resilience4j Circuit Breaker Defaults ────────────────────────────────────
+# Each route gets a circuit breaker named {routeId}-cb.
+# Override per-route via resilience4j.circuitbreaker.instances.{name}.*.
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        failureRateThreshold: 50   # open when ≥50% of last 20 calls fail
+        waitDurationInOpenState: 30000   # ms to stay OPEN before going HALF_OPEN
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
 
 logging:
   level:
     root: INFO
     com.sentinelgateway: DEBUG
-    org.springframework.cloud.gateway: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{X-Request-ID}] %logger{36} - %msg%n"
+    org.springframework.cloud.gateway: INFO

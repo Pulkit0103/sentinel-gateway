@@ -1,0 +1,17 @@
+server:
+  port: ${PAYMENT_SERVICE_PORT:8084}
+spring:
+  application:
+    name: payment-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: Payment Service
+    description: Phase 2 test downstream service

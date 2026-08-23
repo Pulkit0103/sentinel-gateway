@@ -1,0 +1,47 @@
+===== Phase 12 Git Operations Log =====
+Date: 2026-08-09
+
+--- STEP 1: STAGING ---
+Staged files (git add):
+  - gateway/src/main/java/com/sentinelgateway/gateway/threat/ (entire directory)
+  - gateway/src/test/java/com/sentinelgateway/gateway/threat/ (entire directory)
+  - gateway/src/main/resources/application.yml
+  - ROADMAP.md
+Status: SUCCESS
+
+--- STEP 2: GIT STATUS (confirmed staged files) ---
+On branch feature/threat-detection
+Changes to be committed:
+  modified:   ROADMAP.md
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatAction.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatDetectionFilter.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatDetectionProperties.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatDetector.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatPattern.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatRiskScorer.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/ThreatSignal.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/detectors/CommandInjectionDetector.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/detectors/DetectorUtils.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/detectors/PathTraversalDetector.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/detectors/SqlInjectionDetector.java
+  new file:   gateway/src/main/java/com/sentinelgateway/gateway/threat/detectors/XssDetector.java
+  modified:   gateway/src/main/resources/application.yml
+  new file:   gateway/src/test/java/com/sentinelgateway/gateway/threat/ThreatDetectionFilterTest.java
+
+Total: 15 files staged (13 new, 2 modified)
+
+--- STEP 3: COMMIT ---
+Commit hash: fccb1b1
+Branch: feature/threat-detection
+Message: feat: Phase 12 — Threat Detection (108 tests passing)
+Files changed: 15 files, 713 insertions(+), 5 deletions(-)
+Status: SUCCESS
+
+--- STEP 4: PUSH ---
+Command: git push <PAT-URL> feature/threat-detection
+Result: * [new branch] feature/threat-detection -> feature/threat-detection
+Remote: https://github.com/Pulkit0103/sentinel-gateway
+PR URL: https://github.com/Pulkit0103/sentinel-gateway/pull/new/feature/threat-detection
+Status: SUCCESS
+
+===== ALL OPERATIONS COMPLETED SUCCESSFULLY =====

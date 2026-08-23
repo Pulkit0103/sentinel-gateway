@@ -1,0 +1,4 @@
+Microsoft Windows [Version 10.0.26100.8875]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Pulkit\Github\Personal Projects\sentinel-gateway>

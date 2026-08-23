@@ -1,0 +1,17 @@
+server:
+  port: ${ORDER_SERVICE_PORT:8083}
+spring:
+  application:
+    name: order-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: Order Service
+    description: Phase 2 test downstream service
