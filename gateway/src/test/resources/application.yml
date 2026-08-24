@@ -1,4 +1,7 @@
 sentinel:
+  maintenance:
+    enabled: false
+
   analytics:
     enabled: false
 

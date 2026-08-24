@@ -119,6 +119,13 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  maintenance:
+    enabled: false  # set to true via POST /admin/maintenance/enable to block all upstream traffic
+    message: "Service temporarily unavailable for maintenance"
+    retry-after-seconds: 60
+    bypass-roles:
+      - ROLE_ADMIN
+
   drain:
     enabled: true
     timeout-seconds: 30

@@ -6,6 +6,46 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.18.0] – 2026-08-24 — Phase 18: Maintenance Mode
+
+### Added
+- **`MaintenanceProperties`** (`@Component`, `@ConfigurationProperties("sentinel.maintenance")`):
+  - `enabled: boolean` (default `false`) — master on/off switch toggled at runtime
+  - `message: String` (default "Service temporarily unavailable for maintenance") — body message
+  - `retryAfterSeconds: int` (default `60`) — value set in `Retry-After` response header
+  - `bypassRoles: List<String>` (default `["ROLE_ADMIN"]`) — roles that bypass maintenance mode
+- **`MaintenanceFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 2`):
+  - When `enabled=true`, returns 503 JSON `{"status":"maintenance","message":"...","retryAfterSeconds":N}`
+  - Sets `Retry-After` header on all 503 responses
+  - Skips `/actuator/**` (health probes) and `/admin/**` (operational controls) — always let through
+  - Checks `ReactiveSecurityContextHolder` for bypass roles; admins with `ROLE_ADMIN` pass through
+  - Implemented as `WebFilter` (not GlobalFilter) so it intercepts ALL paths, including unmapped ones
+- **`MaintenanceController`** (`@RestController`, `/admin/maintenance`):
+  - `GET  /admin/maintenance` — returns current state `{enabled, message, retryAfterSeconds}`
+  - `POST /admin/maintenance/enable` — flips `enabled=true`, returns updated state
+  - `POST /admin/maintenance/disable` — flips `enabled=false`, returns updated state
+  - All endpoints require `ROLE_ADMIN` (enforced by `SecurityWebFilterChain`)
+  - Runtime toggle takes effect immediately; change is not persisted across restarts
+- **`application.yml`** (main and test): `sentinel.maintenance.enabled: false` block added
+
+### Tests added
+- **`MaintenancePropertiesTest`** (8 unit tests): verifies all defaults and mutator round-trips
+- **`MaintenanceFilterTest`** (6 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `maintenanceDisabled_requestPassesThrough` — disabled → 200
+  - `maintenanceEnabled_regularUser_returns503` — enabled, regular JWT → 503
+  - `maintenanceEnabled_adminRole_bypassesMaintenanceMode` — enabled, ROLE_ADMIN → 200
+  - `maintenanceEnabled_503Body_containsExpectedFields` — body has `status`, `message`, `retryAfterSeconds`
+  - `maintenanceEnabled_503_hasRetryAfterHeader` — `Retry-After` header present
+  - `maintenanceEnabled_adminEndpoint_isStillReachable` — `/admin/maintenance` reachable during maintenance
+- **`MaintenanceControllerTest`** (5 integration tests):
+  - `getStatus_admin_returns200WithBody` — GET status → 200
+  - `enable_admin_setsEnabledTrue` — POST enable → body shows `enabled=true`
+  - `disable_admin_setsEnabledFalse` — POST disable → body shows `enabled=false`
+  - `enable_unauthenticated_returns401` — no auth → 401
+  - `enable_userRole_returns403` — USER role → 403
+
+---
+
 ## [0.17.0] – 2026-08-24 — Phase 17: Graceful Shutdown & In-Flight Request Draining
 
 ### Added
