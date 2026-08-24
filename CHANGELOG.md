@@ -6,6 +6,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.31.0] – 2026-08-24 — Phase 31: Admin Operation Audit Trail
+
+### Added
+- **`AdminAuditRecord`** — immutable record: `timestamp`, `subject`, `method`, `path`, `status`
+- **`AdminAuditRegistry`** (`@Component`):
+  - `LinkedBlockingDeque<AdminAuditRecord>` ring buffer with 500-entry cap
+  - Oldest entry evicted when full (ring-buffer semantics)
+  - `record()`, `all()`, `size()`, `clear()`
+- **`AdminAuditFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 1`):
+  - Intercepts all `/admin/**` requests except `/admin/audit-log/**` (self-exclusion)
+  - Records subject (from JWT or "anonymous"), method, path, and response status after chain completes
+- **`AdminAuditController`** (`@RestController`, `/admin/audit-log`):
+  - `GET /admin/audit-log?limit=100` — returns `{total, returned, records}`, newest N via limit param
+  - `POST /admin/audit-log/clear` — clears the in-memory log, returns `{cleared, remaining}`
+  - Requires `ROLE_ADMIN`
+
+### Tests added
+- **`AdminAuditRegistryTest`** (6 unit tests):
+  - `freshRegistry_isEmpty`, `record_addsEntry`, `all_returnsRecordsInOrder`
+  - `clear_removesAllRecords`, `ringBuffer_evictsOldestWhenFull`, `record_capturesAllFields`
+- **`AdminAuditControllerTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getAuditLog_admin_returnsExpectedFields`, `seededRecords_appearsInLog`
+  - `limitParameter_restrictedResults`, `clearLog_emptiesRegistry`
+  - `getAuditLog_userRole_returns403`
+
+---
+
 ## [0.30.0] – 2026-08-24 — Phase 30: Gateway Uptime Tracking
 
 ### Added
