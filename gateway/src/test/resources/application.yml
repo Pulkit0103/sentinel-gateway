@@ -79,6 +79,9 @@ sentinel:
   throughput:
     enabled: true
 
+  auth-stat:
+    enabled: true
+
   method-stats:
     enabled: true
 

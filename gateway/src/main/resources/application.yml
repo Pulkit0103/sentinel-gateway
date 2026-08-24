@@ -205,6 +205,9 @@ sentinel:
   throughput:
     enabled: true   # track request throughput (RPS) in 1s/10s/60s sliding windows with peak tracking
 
+  auth-stat:
+    enabled: true   # track Authorization header type distribution (bearer/basic/apikey/none/other)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

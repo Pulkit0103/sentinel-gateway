@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.67.0] – 2026-08-25 — Phase 67: Authorization Header Type Distribution
+
+### Added
+- **`AuthStatProperties`** (`@ConfigurationProperties(prefix="sentinel.auth-stat")`):
+  - `enabled` (default `true`)
+- **`AuthStatRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` — one counter per auth type
+  - `classify(authHeader)` — maps Authorization header to: `bearer` (starts with "Bearer "), `basic` (starts with "Basic "), `apikey` (starts with "ApiKey " or "API-Key "), `none` (null/blank), `other` (anything else); normalised to lowercase
+  - `record(authHeader)`, `snapshot()` → `{total, types{none, bearer, apikey, basic, other}}` all five keys always present, `reset()`
+- **`AuthStatFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 26`):
+  - Reads `Authorization` request header at filter entry
+  - Skips `/actuator/**` and `/admin/**`
+- **`AuthStatController`** (`@RestController`, `/admin/auth-stats`):
+  - `GET /admin/auth-stats` — `{enabled, total, types}`, requires `ROLE_ADMIN`
+  - `POST /admin/auth-stats/reset` — clears all counters
+
+### Tests added
+- **`AuthStatControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields + all five type keys present, 5 seeded records classified correctly (2 bearer + 1 basic + 1 none + 1 other), reset clears
+  - user role returns 403, `classify()` boundary conditions: null→none, blank→none, Bearer/BEARER→bearer, ApiKey/API-Key→apikey, Digest→other
+
+---
+
 ## [0.66.0] – 2026-08-24 — Phase 66: Request Throughput Rate Monitor
 
 ### Added
