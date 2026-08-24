@@ -51,6 +51,9 @@ sentinel:
     enabled: true
     max-records: 200
 
+  cache-ttl:
+    enabled: true
+
   method-stats:
     enabled: true
 

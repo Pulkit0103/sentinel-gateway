@@ -177,6 +177,9 @@ sentinel:
     enabled: true   # record recent 4xx/5xx error responses with path and status for triage
     max-records: 200  # ring-buffer capacity for error history
 
+  cache-ttl:
+    enabled: true   # track response Cache-Control max-age distribution (no-cache/short/medium/long)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

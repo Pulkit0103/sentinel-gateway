@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.57.0] – 2026-08-24 — Phase 57: Response Cache-Control TTL Distribution
+
+### Added
+- **`CacheTtlProperties`** (`@ConfigurationProperties(prefix="sentinel.cache-ttl")`):
+  - `enabled` (default `true`)
+- **`CacheTtlRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` with fixed buckets: `no-cache`, `short`, `medium`, `long`
+  - `classify(cacheControl)` — parses `max-age=N` from the header; routes `no-store`/`no-cache`/absent/`max-age=0` to `no-cache`; `1–60s` → `short`; `61–3600s` → `medium`; `>3600s` → `long`
+  - `record(cacheControl)`, `snapshot()` → `{total, buckets}` with all four bucket keys always present, `reset()`
+- **`CacheTtlFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 17`):
+  - Uses `beforeCommit` to read response `Cache-Control` header just before flush
+  - Skips `/actuator/**` and `/admin/**`
+- **`CacheTtlController`** (`@RestController`, `/admin/cache-ttl-stats`):
+  - `GET /admin/cache-ttl-stats` — `{enabled, total, buckets}`, requires `ROLE_ADMIN`
+  - `POST /admin/cache-ttl-stats/reset` — clears all counters
+
+### Tests added
+- **`CacheTtlControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 6 seeded values bucketed to correct 4 categories, reset clears counters
+  - user role returns 403, `classify()` unit test covering all boundary conditions
+
+---
+
 ## [0.56.0] – 2026-08-24 — Phase 56: Error-Path Ring-Buffer
 
 ### Added
