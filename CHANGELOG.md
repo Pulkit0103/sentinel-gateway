@@ -6,6 +6,37 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.20.0] – 2026-08-24 — Phase 20: Admin Route Blocking
+
+### Added
+- **`RouteBlockRegistry`** (`@Component`):
+  - Thread-safe `ConcurrentHashMap`-backed in-memory set of blocked route IDs
+  - `block(routeId)`, `unblock(routeId)`, `unblockAll()`, `isBlocked(routeId)`, `blockedRouteIds()` operations
+  - State is ephemeral (lost on restart) — designed for emergency operator actions
+- **`RouteBlockFilter`** (`GlobalFilter`, order `HIGHEST_PRECEDENCE + 3`):
+  - Reads `GATEWAY_ROUTE_ATTR`; if route ID is in `RouteBlockRegistry`, returns 503 immediately
+  - 503 JSON body: `{"status":503,"error":"Route temporarily blocked","routeId":"..."}`
+  - Complementary to route disable (disable → 404, block → 503 with no config change)
+- **`RouteBlockController`** (`@RestController`, `/admin/route-blocks`):
+  - `POST   /admin/route-blocks/{routeId}` — block a route (idempotent)
+  - `DELETE /admin/route-blocks/{routeId}` — unblock a specific route
+  - `GET    /admin/route-blocks` — list all currently blocked route IDs + count
+  - `DELETE /admin/route-blocks` — clear all blocks at once
+  - All endpoints require `ROLE_ADMIN`
+
+### Tests added
+- **`RouteBlockRegistryTest`** (8 unit tests): verifies block/unblock/unblockAll/isBlocked semantics
+- **`RouteBlockFilterTest`** (7 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `routeNotBlocked_returns200` — unblocked route passes through
+  - `routeBlocked_returns503` — directly blocked route → 503
+  - `blockViaController_thenRequest_returns503` — admin POST → subsequent request 503
+  - `unblockViaController_thenRequest_returns200` — admin DELETE → subsequent request 200
+  - `blockedRoute_503Body_hasExpectedFields` — body has `error`, `routeId`, `status`
+  - `blockController_requiresAdminRole_returns403ForUser` — USER role → 403
+  - `listBlockedRoutes_showsBlockedIds` — GET /admin/route-blocks → list with count
+
+---
+
 ## [0.19.0] – 2026-08-24 — Phase 19: Required Header Validation
 
 ### Added
