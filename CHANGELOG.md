@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.21.0] – 2026-08-24 — Phase 21: Circuit Breaker State Admin API
+
+### Added
+- **`CircuitBreakerStateController`** (`@RestController`, `/admin/circuit-breakers`):
+  - `GET  /admin/circuit-breakers` — lists all Resilience4j circuit breakers registered in
+    `CircuitBreakerRegistry` with a per-CB snapshot: `name`, `state` (CLOSED/OPEN/HALF_OPEN),
+    `failureRate`, `slowCallRate`, `numberOfBufferedCalls`, `numberOfFailedCalls`,
+    `numberOfSuccessfulCalls`
+  - `POST /admin/circuit-breakers/{name}/reset` — forces the named CB to CLOSED state
+    and returns `{name, stateBefore, stateAfter}`; returns 404 when the CB name is not registered
+  - Circuit breakers are named `{routeId}-cb` and created lazily on first use; the list may be
+    empty on a fresh instance with no traffic
+  - All endpoints require `ROLE_ADMIN`
+
+### Tests added
+- **`CircuitBreakerStateControllerTest`** (6 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getCircuitBreakers_admin_returns200WithList` — GET returns 200 with `circuitBreakers` + `count`
+  - `getCircuitBreakers_preSeededCb_appearsInList` — pre-created CB visible with all snapshot fields
+  - `getCircuitBreakers_userRole_returns403` — USER role → 403
+  - `resetCircuitBreaker_openCb_transitionsToClosed` — OPEN → CLOSED, stateBefore=OPEN reported
+  - `resetCircuitBreaker_unknownName_returns404` — unknown CB name → 404
+  - `resetCircuitBreaker_userRole_returns403` — USER role → 403
+
+---
+
 ## [0.20.0] – 2026-08-24 — Phase 20: Admin Route Blocking
 
 ### Added
