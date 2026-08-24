@@ -12,6 +12,11 @@ sentinel:
   security-headers:
     enabled: true
 
+  request-size:
+    enabled: true
+    max-body-bytes: 10485760
+    max-records: 100
+
   jwt-expiry-warning:
     enabled: true
     warning-window-seconds: 300

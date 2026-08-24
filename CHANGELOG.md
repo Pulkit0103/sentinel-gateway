@@ -6,6 +6,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.37.0] – 2026-08-24 — Phase 37: Request Size Guard
+
+### Added
+- **`RequestSizeProperties`** (`@ConfigurationProperties(prefix="sentinel.request-size")`):
+  - `enabled` (default `true`), `maxBodyBytes` (default `10485760` = 10 MB), `maxRecords` (default `100`)
+- **`OversizedRequestRecord`** (Java record): `timestamp, method, path, claimedBytes`
+- **`OversizedRequestRegistry`** (`@Component`):
+  - `LinkedBlockingDeque` ring-buffer bounded by `maxRecords`; `record`, `snapshot`, `count`, `clear`
+- **`RequestSizeFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 4`):
+  - Reads `Content-Length` header; rejects with HTTP 413 + JSON body if it exceeds `maxBodyBytes`
+  - Records rejection in `OversizedRequestRegistry`; skips check when no `Content-Length` is present
+  - Runs before Spring Security and the request sanitizer
+- **`RequestSizeController`** (`@RestController`, `/admin/request-sizes`):
+  - `GET /admin/request-sizes` — `{enabled, maxBodyBytes, count, records}`, requires `ROLE_ADMIN`
+  - `POST /admin/request-sizes/clear` — empties the registry
+
+### Tests added
+- **`OversizedRequestRegistryTest`** (6 unit tests):
+  - empty registry, single record, snapshot contents, ring-buffer eviction, clear, immutable snapshot
+- **`RequestSizeFilterTest`** (7 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - within-limit body passes, oversized body returns 413, registry records rejection
+  - filter disabled passes large body, GET without Content-Length passes
+  - admin endpoint fields, clear endpoint empties registry
+
+---
+
 ## [0.36.0] – 2026-08-24 — Phase 36: JWT Expiry Warning
 
 ### Added

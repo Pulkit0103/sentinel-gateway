@@ -138,6 +138,11 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  request-size:
+    enabled: true              # reject requests whose Content-Length exceeds max-body-bytes
+    max-body-bytes: 10485760   # 10 MB default; requests declaring a larger body receive 413
+    max-records: 100           # ring-buffer capacity for oversized-request history
+
   jwt-expiry-warning:
     enabled: true              # add X-JWT-Expires-In header when JWT is expiring soon
     warning-window-seconds: 300  # warn when JWT expires within this many seconds
