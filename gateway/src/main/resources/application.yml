@@ -180,6 +180,9 @@ sentinel:
   cache-ttl:
     enabled: true   # track response Cache-Control max-age distribution (no-cache/short/medium/long)
 
+  header-count:
+    enabled: true   # track request header count distribution (low/normal/elevated/high buckets)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

@@ -54,6 +54,9 @@ sentinel:
   cache-ttl:
     enabled: true
 
+  header-count:
+    enabled: true
+
   method-stats:
     enabled: true
 

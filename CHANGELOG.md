@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.58.0] – 2026-08-24 — Phase 58: Request Header Count Distribution
+
+### Added
+- **`HeaderCountProperties`** (`@ConfigurationProperties(prefix="sentinel.header-count")`):
+  - `enabled` (default `true`)
+- **`HeaderCountRegistry`** (`@Component`):
+  - Fixed buckets: `low` (1-5), `normal` (6-15), `elevated` (16-30), `high` (31+)
+  - `AtomicLong maxSeen` — CAS spin-loop tracks the highest header count ever seen
+  - `record(count)`, `snapshot()` → `{total, maxSeen, buckets}` with all four keys always present, `reset()`
+- **`HeaderCountFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 18`):
+  - Reads `exchange.getRequest().getHeaders().size()` at filter entry time
+  - Skips `/actuator/**` and `/admin/**`
+- **`HeaderCountController`** (`@RestController`, `/admin/header-count-stats`):
+  - `GET /admin/header-count-stats` — `{enabled, total, maxSeen, buckets}`, requires `ROLE_ADMIN`
+  - `POST /admin/header-count-stats/reset` — clears all counters and maxSeen
+
+### Tests added
+- **`HeaderCountControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 5 seeded counts bucketed correctly + maxSeen=50 tracked, reset clears counters+max
+  - user role returns 403, `classify()` boundary conditions verified
+
+---
+
 ## [0.57.0] – 2026-08-24 — Phase 57: Response Cache-Control TTL Distribution
 
 ### Added
