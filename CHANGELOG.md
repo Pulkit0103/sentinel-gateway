@@ -6,6 +6,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.17.0] – 2026-08-24 — Phase 17: Graceful Shutdown & In-Flight Request Draining
+
+### Added
+- **`DrainProperties`** (`@Component`, `@ConfigurationProperties("sentinel.drain")`):
+  - `enabled: boolean` (default `true`) — master switch; set to `false` to skip drain
+  - `timeoutSeconds: int` (default `30`) — max seconds to wait for in-flight requests
+    before the JVM is forced to exit; mirrors `spring.lifecycle.timeout-per-shutdown-phase`
+- **`ShutdownController`** (`@RestController`, `/admin/shutdown`):
+  - `POST /admin/shutdown` — triggers programmatic graceful shutdown
+  - Returns 200 with `{"status":"shutting_down","drainTimeoutSeconds":N}`
+  - Context close is deferred 200 ms on a separate thread so the HTTP response is
+    flushed before the Netty event loop is torn down
+  - Secured by the existing `SecurityWebFilterChain`: requires `ROLE_ADMIN`
+- **`application.yml`** updated:
+  - `server.shutdown: graceful` (already present — confirmed)
+  - `spring.lifecycle.timeout-per-shutdown-phase: 30s` (already present — confirmed)
+  - `sentinel.drain.enabled: true` and `sentinel.drain.timeout-seconds: 30` added
+
+### Tests added
+- **`DrainPropertiesTest`** (4 unit tests): verifies default `enabled=true`,
+  default `timeoutSeconds=30`, and both setter/getter round-trips
+- **`ShutdownControllerTest`** (2 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `shutdown_withAdminRole_returns200AndShuttingDownStatus` — ADMIN POST to
+    `/admin/shutdown` → 200, body contains `status=shutting_down` and `drainTimeoutSeconds=30`
+  - `shutdown_withoutAuth_returns401` — no auth → 401 Unauthorized
+  - `ConfigurableApplicationContext` is `@MockBean` so `close()` is a no-op in tests
+
+---
+
 ## [0.16.0] – 2026-08-24 — Phase 16: Dynamic Route Reload
 
 ### Added

@@ -119,6 +119,10 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  drain:
+    enabled: true
+    timeout-seconds: 30
+
   transform:
     sanitize-request-headers:
       - X-User-Id
