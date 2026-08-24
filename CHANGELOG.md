@@ -6,6 +6,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.26.0] – 2026-08-24 — Phase 26: JWT Claim-Based Route Authorization
+
+### Added
+- **`ClaimAuthorizationProperties`** (`@Component`, `@ConfigurationProperties("sentinel.claim-authorization")`):
+  - `enabled: boolean` (default `false`)
+  - `routes: Map<String, List<ClaimRequirement>>` — per-route requirements list
+  - `ClaimRequirement`: `claim` (JWT claim name) + `allowedValues` (list of acceptable string values)
+  - All requirements for a route must match (AND logic)
+  - `requirementsForRoute(routeId)` helper
+- **`ClaimAuthorizationFilter`** (`GlobalFilter`, order `HIGHEST_PRECEDENCE + 6`):
+  - After route matching, iterates over configured requirements for the matched route
+  - For each requirement, checks `jwt.getClaim(name).toString()` against `allowedValues`
+  - Missing or non-matching claim → 403 JSON: `{"status":403,"error":"JWT claim authorization failed"}`
+  - Non-JWT authentication passes through unchanged
+  - Correct reactor pattern: `map → defaultIfEmpty(true) → flatMap`
+- **`application.yml`** (main and test): `sentinel.claim-authorization.enabled: false` block added
+
+### Tests added
+- **`ClaimAuthorizationFilterTest`** (6 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `matchingClaimValue_returns200` — JWT with `department=engineering` → 200
+  - `wrongClaimValue_returns403` — JWT with `department=marketing` → 403
+  - `missingRequiredClaim_returns403` — JWT with no `department` claim → 403
+  - `filterDisabled_wrongClaimPasses` — `enabled=false` → 200
+  - `wrongClaim_403Body_hasExpectedFields` — body has `error` and `status` fields
+  - `secondAllowedValue_finance_returns200` — `department=finance` also passes
+
+---
+
 ## [0.25.0] – 2026-08-24 — Phase 25: Response Time SLA Tracking
 
 ### Added

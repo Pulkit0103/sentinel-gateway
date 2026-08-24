@@ -1,4 +1,7 @@
 sentinel:
+  claim-authorization:
+    enabled: false
+
   sla:
     enabled: false
 

@@ -119,6 +119,13 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  claim-authorization:
+    enabled: false  # set to true and configure routes map to enforce JWT claim values per route
+    # routes:
+    #   payment-service:
+    #     - claim: department
+    #       allowed-values: [finance, engineering]
+
   sla:
     enabled: false  # set to true and configure routes map to track response time SLAs
     # routes:
