@@ -1,4 +1,9 @@
 sentinel:
+  slow-request:
+    enabled: true
+    threshold-ms: 2000
+    max-records: 100
+
   request-sanitizer:
     enabled: true
     max-header-value-length: 8192

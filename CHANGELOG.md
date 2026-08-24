@@ -6,6 +6,36 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.33.0] – 2026-08-24 — Phase 33: Slow Request Detection
+
+### Added
+- **`SlowRequestRecord`** — immutable record: `timestamp`, `method`, `path`, `durationMs`, `status`
+- **`SlowRequestProperties`** (`@Component`, `@ConfigurationProperties("sentinel.slow-request")`):
+  - `enabled: boolean` (default `true`)
+  - `thresholdMs: long` (default `2000`) — minimum duration to record
+  - `maxRecords: int` (default `100`) — ring-buffer capacity
+- **`SlowRequestRegistry`** (`@Component`):
+  - `LinkedBlockingDeque` ring buffer initialized from `maxRecords`
+  - `record()`, `all()`, `size()`, `clear()`
+- **`SlowRequestFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 2`):
+  - Captures start time before chain, then uses `doFinally` to measure duration
+  - Records if `durationMs >= thresholdMs`; skips `/admin/**` and `/actuator/**`
+- **`SlowRequestController`** (`@RestController`, `/admin/slow-requests`):
+  - `GET /admin/slow-requests` — returns `{enabled, thresholdMs, total, records}`, requires `ROLE_ADMIN`
+  - `POST /admin/slow-requests/clear` — clears log, returns `{cleared, remaining}`
+- **`application.yml`** (main and test): `sentinel.slow-request.*` block added
+
+### Tests added
+- **`SlowRequestRegistryTest`** (6 unit tests):
+  - `freshRegistry_isEmpty`, `record_addsEntry`, `all_returnsRecordsInOrder`
+  - `clear_removesAllEntries`, `ringBuffer_evictsOldestWhenFull`, `record_capturesAllFields`
+- **`SlowRequestControllerTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getSlowRequests_admin_returnsExpectedFields`, `seededRecords_appearsInLog`
+  - `clearLog_emptiesRegistry`, `getSlowRequests_userRole_returns403`
+  - `filterDisabledConfig_reflectedInResponse`
+
+---
+
 ## [0.32.0] – 2026-08-24 — Phase 32: Request Header Sanitizer
 
 ### Added

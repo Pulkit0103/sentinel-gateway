@@ -119,6 +119,11 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  slow-request:
+    enabled: true        # detect and record requests exceeding threshold-ms
+    threshold-ms: 2000   # requests taking longer than this (in ms) are recorded
+    max-records: 100     # ring-buffer capacity
+
   request-sanitizer:
     enabled: true            # validate header safety on every request
     max-header-value-length: 8192  # reject header values longer than this (bytes)
