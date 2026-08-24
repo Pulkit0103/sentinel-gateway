@@ -6,6 +6,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.16.0] – 2026-08-24 — Phase 16: Dynamic Route Reload
+
+### Added
+- **`RouteRefreshController`** (`@RestController`, `/admin/routes/refresh`):
+  - `POST /admin/routes/refresh` — manually triggers a `RefreshRoutesEvent`, causing
+    `CachingRouteLocator` to invalidate its cache and re-fetch routes from
+    `SentinelRouteDefinitionRepository` without a restart
+  - Returns 204 No Content
+  - Protected by existing `SecurityWebFilterChain` ADMIN role requirement for `/admin/**`
+- **`RouteService`** already injects `ApplicationEventPublisher` and publishes
+  `RefreshRoutesEvent` after every mutating operation (create, update, delete, setEnabled)
+  via the private `refresh()` method — confirmed present and wired correctly
+
+### Tests added
+- **`DynamicRouteReloadTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`, `@RecordApplicationEvents`):
+  - `manualRefresh_returns204` — admin POST to `/admin/routes/refresh` → 204 No Content
+  - `manualRefresh_nonAdmin_returns403` — USER role → 403 Forbidden
+  - `manualRefresh_unauthenticated_returns401` — no auth → 401 Unauthorized
+  - `routeService_publishesRefreshEvent_onSave` — direct `RouteService.create()` call →
+    `ApplicationEvents` stream confirms at least one `RefreshRoutesEvent` was published
+  - `manualRefresh_isIdempotent` — two consecutive POST /admin/routes/refresh both return 204
+
+---
+
 ## [0.15.0] – 2026-08-24 — Phase 15: Configurable JWT Claims Forwarding + Scope Denial Audit Events
 
 ### Added
