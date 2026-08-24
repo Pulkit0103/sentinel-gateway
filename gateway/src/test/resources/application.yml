@@ -12,6 +12,9 @@ sentinel:
   security-headers:
     enabled: true
 
+  status-codes:
+    enabled: true
+
   latency:
     enabled: true
     max-samples-per-route: 100

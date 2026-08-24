@@ -6,6 +6,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.40.0] – 2026-08-24 — Phase 40: Response Status Code Distribution
+
+### Added
+- **`StatusCodeProperties`** (`@ConfigurationProperties(prefix="sentinel.status-codes")`):
+  - `enabled` (default `true`)
+- **`StatusCodeRegistry`** (`@Component`):
+  - Per-code `AtomicLong` counters via `ConcurrentHashMap<Integer, AtomicLong>`
+  - Four range bucket counters: `2xx`, `3xx`, `4xx`, `5xx`, `other`
+  - `record(statusCode)`, `snapshot()` → `{total, buckets, codes}`, `reset()`
+- **`StatusCodeFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 5`):
+  - Uses `doFinally` to capture response status after chain completes
+  - Skips `/actuator/**` to avoid polluting metrics with health probes
+- **`StatusCodeController`** (`@RestController`, `/admin/status-codes`):
+  - `GET /admin/status-codes` — `{enabled, total, buckets, codes}`, requires `ROLE_ADMIN`
+  - `POST /admin/status-codes/reset` — clears all counters
+
+### Tests added
+- **`StatusCodeRegistryTest`** (6 unit tests):
+  - empty registry, 2xx bucket, 4xx/5xx segregation, per-code accuracy, reset, 3xx bucket
+- **`StatusCodeControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded codes visible, reset clears, user role returns 403
+
+---
+
 ## [0.39.0] – 2026-08-24 — Phase 39: Gateway Health Score
 
 ### Added

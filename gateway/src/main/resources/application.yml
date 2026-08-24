@@ -138,6 +138,9 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  status-codes:
+    enabled: true   # track HTTP response status code distribution (per-code and 2xx/3xx/4xx/5xx)
+
   latency:
     enabled: true                    # track per-route response latency percentiles
     max-samples-per-route: 1000      # ring-buffer depth per route
