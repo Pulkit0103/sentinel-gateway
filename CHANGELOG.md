@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.45.0] – 2026-08-24 — Phase 45: Live Operations Dashboard
+
+### Added
+- **`LiveDashboardController`** (`@RestController`, `/admin/dashboard`):
+  - `GET /admin/dashboard` — single endpoint aggregating 11 monitoring sections:
+    - `timestamp` — snapshot time (ISO-8601)
+    - `health` — composite score, grade, factors (from Phase 39)
+    - `uptime` — startTime, uptimeSeconds, totalRequests (from Phase 30)
+    - `concurrency` — current, peak, totalCompleted (from Phase 41)
+    - `errors` — routeCount, totalRequests, totalErrors (from Phase 35)
+    - `statusCodes` — total + 2xx/3xx/4xx/5xx/other buckets (from Phase 40)
+    - `latency` — routeCount (from Phase 38)
+    - `slowRequests` — recordedCount (from Phase 33)
+    - `sessions` — activeCount (from Phase 27)
+    - `sizes` — oversizedRequestCount, responseSizeSamples, responseSizeAvgBytes (Phases 37, 42)
+    - `hops` — totalProcessed, totalRejected (from Phase 44)
+  - Requires `ROLE_ADMIN`
+
+### Tests added
+- **`LiveDashboardControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - all top-level sections present, health contains score/grade/factors, uptime contains uptimeSeconds
+  - user role returns 403
+
+---
+
 ## [0.44.0] – 2026-08-24 — Phase 44: Hop Count Guard
 
 ### Added
