@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.61.0] – 2026-08-24 — Phase 61: Request URI Scheme Distribution
+
+### Added
+- **`SchemeStatProperties`** (`@ConfigurationProperties(prefix="sentinel.scheme-stats")`):
+  - `enabled` (default `true`)
+- **`SchemeStatRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` — unbounded, one counter per distinct scheme string
+  - `record(scheme)` — normalises to lowercase; `null`/blank → `"unknown"`
+  - `snapshot()` → `{total, schemes}`, `reset()`
+- **`SchemeStatFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 21`):
+  - Prefers `X-Forwarded-Proto` header (TLS-terminating proxy scenario) over URI scheme
+  - Skips `/actuator/**` and `/admin/**`
+- **`SchemeStatController`** (`@RestController`, `/admin/scheme-stats`):
+  - `GET /admin/scheme-stats` — `{enabled, total, schemes}`, requires `ROLE_ADMIN`
+  - `POST /admin/scheme-stats/reset` — clears all counters
+
+### Tests added
+- **`SchemeStatControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 5 seeded schemes (2 http + 3 https) counted correctly, reset clears
+  - user role returns 403, null scheme → "unknown" and uppercase normalised
+
+---
+
 ## [0.60.0] – 2026-08-24 — Phase 60: Query Parameter Count Distribution
 
 ### Added

@@ -63,6 +63,9 @@ sentinel:
   query-param-count:
     enabled: true
 
+  scheme-stats:
+    enabled: true
+
   method-stats:
     enabled: true
 

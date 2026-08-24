@@ -189,6 +189,9 @@ sentinel:
   query-param-count:
     enabled: true   # track request query-parameter count distribution (zero/few/moderate/many)
 
+  scheme-stats:
+    enabled: true   # track request URI scheme distribution (http, https)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 
