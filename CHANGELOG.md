@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.24.0] – 2026-08-24 — Phase 24: API Key Rotation
+
+### Added
+- **`ApiKeyService.rotate(keyId)`**:
+  - Generates a new raw key (`sgk_<base64url-32-bytes>`), computes SHA-256 hash
+  - Updates the existing `api_keys` record with the new hash — same `id`, `clientId`,
+    `tenantId`, `scopes`, `status`, `expiresAt` all preserved
+  - Returns `RotatedApiKey(newRawKey, entity)` — new raw key shown exactly once
+  - Old raw key is immediately invalidated (hash no longer matches)
+- **`POST /admin/api-keys/{id}/rotate`** (`ApiKeyAdminController`):
+  - Requires `ROLE_ADMIN`
+  - Returns 200 with `{newRawKey, id, clientId, status, expiresAt}`
+  - Returns 404 when `id` is not found
+
+### Tests added
+- **`ApiKeyRotationTest`** (6 integration + unit tests, `@SpringBootTest RANDOM_PORT`):
+  - `rotate_existingKey_returns200WithNewRawKey` — rotate returns 200 with expected fields
+  - `rotate_newRawKey_startsWithSgkPrefix` — new key has `sgk_` prefix
+  - `rotate_newKeyDiffersFromOldKey` — new raw key != original raw key
+  - `rotate_unknownId_returns404` — 999999 ID → 404
+  - `rotate_userRole_returns403` — USER role → 403
+  - `rotate_updatesKeyHashInDatabase` — DB record has new hash matching `sha256(newRawKey)`
+
+---
+
 ## [0.23.0] – 2026-08-24 — Phase 23: Active Request Metrics
 
 ### Added
