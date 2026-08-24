@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.13.0] – 2026-08-24 — Phase 13: Admin Dashboard — Gateway Health Aggregation
+
+### Added
+- **`RouteHealthReport`** (record): per-route snapshot — `routeId`, `path`, `serviceUri`, `methods`,
+  `enabled`, `rateLimitPolicy`, `cacheTtlSeconds`, `timeoutMs`, `maxBodyBytes`,
+  `ipFilterEnabled`, `canaryEnabled`, `canaryWeight`
+- **`HealthSummary`** (record): aggregated counts — `totalRoutes`, `enabledRoutes`, `disabledRoutes`,
+  `routesWithCanary`, `routesWithCache`, `routesWithIpFilter`, `routesWithTimeout`
+- **`GatewayHealthController`** (`@RestController`, `/admin/health`):
+  - `GET /admin/health/routes` — streams all routes from `RouteRepository`, maps each
+    `RouteEntity` to `RouteHealthReport`; checks `CanaryProperties.getRoutes()` for canary state
+  - `GET /admin/health/summary` — collects all route reports and aggregates into `HealthSummary`
+  - Protected by existing `SecurityWebFilterChain` ADMIN role requirement for `/admin/**`
+
+### Tests added
+- **`GatewayHealthControllerTest`** (4 tests):
+  - `getRoutes_returnsListWithSeededRoutes` — admin JWT → 200, non-empty list with all required fields
+  - `getSummary_returnsAggregatedCounts` — admin JWT → 200, `totalRoutes >= 1`, enabled+disabled=total
+  - `getRoutes_unauthenticated_returns401` — no auth → 401
+  - `getRoutes_nonAdminRole_returns403` — USER role → 403
+
+---
+
 ## [0.12.0] – 2026-08-24 — Phase 12: Webhook Event Emission
 
 ### Added
