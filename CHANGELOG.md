@@ -6,6 +6,25 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.34.0] – 2026-08-24 — Phase 34: Config Summary Dashboard
+
+### Added
+- **`ConfigSummaryController`** (`@RestController`, `/admin/config`):
+  - `GET /admin/config` — single-endpoint dashboard showing:
+    - `startTime` — gateway start timestamp (ISO-8601)
+    - `features` — map of feature name → enabled boolean, covering: maintenance, ipAccess, securityHeaders, requestSanitizer, slowRequestDetection, slaTracking, claimAuthorization, jwtAudienceValidation
+    - `stats` — live snapshot: uptimeSeconds, requestCount, totalTrackedSessions, inflightRequests, totalCompletedRequests
+  - Requires `ROLE_ADMIN`
+
+### Tests added
+- **`ConfigSummaryControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getConfig_admin_returnsTopLevelKeys` — body has startTime, features, stats
+  - `getConfig_featuresMap_containsAllToggles` — all 8 feature toggle keys present
+  - `getConfig_statsMap_containsMetricKeys` — all 5 metric keys present, uptimeSeconds ≥ 0
+  - `getConfig_userRole_returns403`
+
+---
+
 ## [0.33.0] – 2026-08-24 — Phase 33: Slow Request Detection
 
 ### Added
