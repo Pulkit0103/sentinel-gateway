@@ -138,6 +138,10 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  hop-count:
+    enabled: true   # reject requests with more X-Forwarded-For hops than max-hops (routing loop guard)
+    max-hops: 10    # requests with more than this many proxy hops receive 400
+
   path-length:
     enabled: true            # reject requests with excessively long paths or query strings
     max-path-length: 2048    # 414 URI Too Long if path exceeds this

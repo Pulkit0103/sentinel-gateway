@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.44.0] – 2026-08-24 — Phase 44: Hop Count Guard
+
+### Added
+- **`HopCountProperties`** (`@ConfigurationProperties(prefix="sentinel.hop-count")`):
+  - `enabled` (default `true`), `maxHops` (default `10`)
+- **`HopCountRegistry`** (`@Component`):
+  - `AtomicLong totalProcessed`, `AtomicLong totalRejected`
+  - `ConcurrentHashMap<Integer, AtomicLong>` per-hop-count distribution
+  - `recordProcessed(hopCount)`, `recordRejected(hopCount)`, `snapshot()`, `reset()`
+- **`HopCountFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 6`):
+  - Counts comma-separated entries across all `X-Forwarded-For` header values
+  - Requests exceeding `maxHops` → HTTP 400 + JSON error body
+  - Records every request (processed/rejected) in `HopCountRegistry`
+- **`HopCountController`** (`@RestController`, `/admin/hop-stats`):
+  - `GET /admin/hop-stats` — `{enabled, maxHops, totalProcessed, totalRejected, distribution}`, requires `ROLE_ADMIN`
+  - `POST /admin/hop-stats/reset` — clears all counters
+
+### Tests added
+- **`HopCountFilterTest`** (7 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - no X-Forwarded-For passes, within-limit passes, exceeding limit → 400
+  - filter disabled passes excessive hops, `countHops` utility parsing
+  - admin endpoint fields, distribution correctly records hop counts
+
+---
+
 ## [0.43.0] – 2026-08-24 — Phase 43: Request Path Length Guard
 
 ### Added

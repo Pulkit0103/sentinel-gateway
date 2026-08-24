@@ -12,6 +12,10 @@ sentinel:
   security-headers:
     enabled: true
 
+  hop-count:
+    enabled: true
+    max-hops: 10
+
   path-length:
     enabled: true
     max-path-length: 2048
