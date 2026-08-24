@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.63.0] – 2026-08-24 — Phase 63: Referer Domain Distribution
+
+### Added
+- **`RefererStatProperties`** (`@ConfigurationProperties(prefix="sentinel.referer-stats")`):
+  - `enabled` (default `true`), `topN` (default `20`)
+- **`RefererStatRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` — one counter per distinct referer domain
+  - `extractDomain(referer)` — parses host from Referer URL; `null`/blank → `"direct"`; unparseable → `"unknown"`; normalises to lowercase
+  - `record(refererHeader)`, `snapshot(topN)` → `{total, topDomains[{domain, requests}]}` sorted by count desc, `reset()`
+- **`RefererStatFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 23`):
+  - Reads `Referer` request header at filter entry
+  - Skips `/actuator/**` and `/admin/**`
+- **`RefererStatController`** (`@RestController`, `/admin/referer-stats`):
+  - `GET /admin/referer-stats` — `{enabled, total, topDomains}`, requires `ROLE_ADMIN`
+  - `POST /admin/referer-stats/reset` — clears all counters
+
+### Tests added
+- **`RefererStatControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 4 seeded referers grouped by domain (example.com×2 top), reset clears
+  - user role returns 403, `extractDomain` edge cases: null→direct, blank→direct, bad-url→unknown, uppercase host normalised
+
+---
+
 ## [0.62.0] – 2026-08-24 — Phase 62: URL Path-Depth Distribution
 
 ### Added

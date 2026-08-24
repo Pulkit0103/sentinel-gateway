@@ -69,6 +69,10 @@ sentinel:
   path-depth:
     enabled: true
 
+  referer-stats:
+    enabled: true
+    top-n: 20
+
   method-stats:
     enabled: true
 
