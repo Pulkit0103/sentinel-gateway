@@ -235,6 +235,9 @@ sentinel:
       # Token issuer validated against every incoming JWT's `iss` claim.
       # Must match the Keycloak realm URL exactly (scheme + host + port + path).
       issuer: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/sentinel}
+      # Required JWT audience values. If empty, audience is not validated.
+      # At least one value in the JWT `aud` claim must be in this list.
+      required-audiences: []
   gateway:
     routes:
       - route-id: hello-service

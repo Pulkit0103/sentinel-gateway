@@ -6,6 +6,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.22.0] – 2026-08-24 — Phase 22: JWT Audience Validation
+
+### Added
+- **`JwtAudienceProperties`** (`@Component`, `@ConfigurationProperties("sentinel.security.jwt")`):
+  - `requiredAudiences: List<String>` (default `[]`) — list of acceptable `aud` values
+  - `isAudienceValidationEnabled()` helper — true when list is non-empty
+  - Shares the `sentinel.security.jwt` prefix with the existing issuer setting
+- **`JwtAudienceFilter`** (`WebFilter`, order `0`):
+  - When `requiredAudiences` is non-empty, checks every `JwtAuthenticationToken` request
+  - Validates that at least one entry in the JWT `aud` claim matches a configured audience
+  - Missing `aud` claim → 401; empty/non-matching `aud` → 401
+  - 401 JSON body: `{"status":401,"error":"Invalid JWT audience"}`
+  - Non-JWT auth (API keys) and unauthenticated paths pass through unchanged
+  - Correct reactor pattern used: `map → defaultIfEmpty(true) → flatMap` to avoid double subscription
+- **`application.yml`** (main and test): `sentinel.security.jwt.required-audiences: []` added
+
+### Tests added
+- **`JwtAudiencePropertiesTest`** (5 unit tests): verifies defaults and mutator round-trips
+- **`JwtAudienceFilterTest`** (6 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `audienceValidationDisabled_anyJwtPasses` — `requiredAudiences=[]` → 200
+  - `jwtWithMatchingAudience_returns200` — JWT `aud` matches configured audience → 200
+  - `jwtWithWrongAudience_returns401` — JWT `aud` doesn't match → 401
+  - `jwtWithNoAudienceClaim_returns401` — JWT has no `aud` claim → 401
+  - `jwtWithOneOfMultipleAllowedAudiences_returns200` — any matching audience → 200
+  - `audienceMismatch_401Body_hasExpectedFields` — body has `error` and `status` fields
+
+---
+
 ## [0.21.0] – 2026-08-24 — Phase 21: Circuit Breaker State Admin API
 
 ### Added
