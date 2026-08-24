@@ -6,6 +6,40 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.10.0] – 2026-08-24 — Phase 10: Correlation ID & Tracing Header Propagation
+
+### Added
+- `TracingProperties` (`@Component`, `@ConfigurationProperties("sentinel.tracing")`): two fields —
+  `enabled` (default `true`) and `propagateExisting` (default `true`) — control whether the filter
+  runs and whether a valid incoming `traceparent` is honoured
+- `TracingFilter` (`WebFilter`, `@Order(HIGHEST_PRECEDENCE + 3)`): runs after
+  `RequestSanitizationFilter` (+2) and before `JwtRevocationFilter` (+5 GlobalFilter):
+  - Reads `X-Request-ID` set by the upstream `RequestIdFilter`
+  - Validates incoming `traceparent` against the W3C Trace Context format
+    (`00-<32hex>-<16hex>-<2hex>`); if valid and `propagateExisting=true`, preserves the
+    trace-id and generates a new parent-id for this gateway hop; otherwise generates a
+    fully new `traceparent`
+  - Strips client-supplied `tracestate` and `baggage` to prevent header injection
+  - Sets `traceparent: 00-{traceId}-{parentId}-01`, `tracestate: sentinel=1`, and
+    `baggage: request-id={X-Request-ID}` on every forwarded request
+- `TracingFilterTest` (4 integration tests, WireMock + RSA JWT):
+  1. `noTraceparent_gatewayInjectsNew` — verifies upstream receives a valid new traceparent
+  2. `validTraceparent_isForwardedWithNewParentId` — verifies trace-id preserved, parent-id replaced
+  3. `invalidTraceparent_gatewayReplacesWithNew` — verifies garbage input is replaced
+  4. `baggageHeader_containsRequestId` — verifies `baggage: request-id=<value>` is propagated
+- Total test suite: 193 tests, 0 failures, 0 errors
+
+### Design notes
+- `TracingFilter` is a `WebFilter` (not a `GlobalFilter`) so it fires before Spring Cloud
+  Gateway's routing layer and is not subject to the gateway filter ordering namespace
+- ID generation uses `UUID.randomUUID()` bit-formatted as lowercase hex to satisfy the
+  W3C spec (32 hex chars for trace-id, 16 hex chars for parent-id) without any additional
+  dependency on OpenTelemetry or Micrometer Tracing at the filter level
+- The filter is always active (no `@ConditionalOnProperty`) because `enabled=false` short-circuits
+  inside `filter()`, keeping the bean present for injection while doing nothing at runtime
+
+---
+
 ## [0.9.0] – 2026-08-24 — Phase 9: Per-Route Request Timeout
 
 ### Added
