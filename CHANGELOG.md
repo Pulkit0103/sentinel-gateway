@@ -6,6 +6,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.32.0] – 2026-08-24 — Phase 32: Request Header Sanitizer
+
+### Added
+- **`RequestSanitizerProperties`** (`@Component`, `@ConfigurationProperties("sentinel.request-sanitizer")`):
+  - `enabled: boolean` (default `true`)
+  - `maxHeaderValueLength: int` (default `8192`) — reject header values exceeding this byte count
+  - `blockNullBytes: boolean` (default `true`) — reject header values containing null bytes (`\0`)
+  - Built-in skip list for standard/infrastructure headers: `Authorization`, `Cookie`, `User-Agent`, `Host`, `X-Request-ID`, `traceparent`, `X-Forwarded-For`, etc.
+  - `isSkipped(headerName)` — case-insensitive lookup against skip list
+- **`RequestSanitizerFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 3`):
+  - Iterates all non-skipped request headers; rejects with 400 JSON if length or null-byte violations found
+  - Error body: `{"status":400,"error":"Bad Request","detail":"Header value too long: <name> (max N chars)"}`
+- **`RequestSanitizerController`** (`@RestController`, `/admin/request-sanitizer`):
+  - `GET /admin/request-sanitizer` — returns `{enabled, maxHeaderValueLength, blockNullBytes}`, requires `ROLE_ADMIN`
+- **`application.yml`** (main and test): `sentinel.request-sanitizer.*` block added
+
+### Tests added
+- **`RequestSanitizerPropertiesTest`** (6 unit tests):
+  - Default values, setters, `isSkipped` for standard and custom headers
+- **`RequestSanitizerFilterTest`** (7 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `normalRequest_passes`, `oversizedHeader_returns400`
+  - `headerBelowLimit_passes`, `nullByteInHeader_returns400`
+  - `nullByteCheckDisabled_passes`, `filterDisabled_oversizedHeaderPasses`
+  - `getConfig_admin_returnsExpectedFields`
+
+---
+
 ## [0.31.0] – 2026-08-24 — Phase 31: Admin Operation Audit Trail
 
 ### Added

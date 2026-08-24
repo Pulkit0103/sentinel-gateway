@@ -119,6 +119,11 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  request-sanitizer:
+    enabled: true            # validate header safety on every request
+    max-header-value-length: 8192  # reject header values longer than this (bytes)
+    block-null-bytes: true   # reject header values containing null bytes (\0)
+
   security-headers:
     enabled: true   # adds OWASP recommended security headers to every response
     # headers:

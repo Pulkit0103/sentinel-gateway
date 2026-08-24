@@ -1,4 +1,9 @@
 sentinel:
+  request-sanitizer:
+    enabled: true
+    max-header-value-length: 8192
+    block-null-bytes: true
+
   security-headers:
     enabled: true
 
