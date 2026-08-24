@@ -167,6 +167,9 @@ sentinel:
   accept-stats:
     enabled: true   # track request Accept header distribution (application/json, text/html, etc.)
 
+  route-traffic:
+    enabled: true   # track per-route request counts within 1-min, 5-min, 15-min sliding windows
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

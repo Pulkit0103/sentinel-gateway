@@ -41,6 +41,9 @@ sentinel:
   accept-stats:
     enabled: true
 
+  route-traffic:
+    enabled: true
+
   method-stats:
     enabled: true
 

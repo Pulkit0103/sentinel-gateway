@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.53.0] – 2026-08-24 — Phase 53: Per-Route Windowed Traffic Counter
+
+### Added
+- **`RouteTrafficProperties`** (`@ConfigurationProperties(prefix="sentinel.route-traffic")`):
+  - `enabled` (default `true`)
+- **`RouteTrafficRegistry`** (`@Component`):
+  - `ConcurrentHashMap<route, LinkedBlockingDeque<Long>>` storing millisecond timestamps per route (capped at 10,000 entries)
+  - `record(route)`, `snapshot()` → `{routes: {route: {last1m, last5m, last15m, total}}}`, `reset()`
+  - Window counts computed at query time by filtering timestamps against cutoffs — no background threads
+- **`RouteTrafficFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 14`):
+  - Records the 2-segment path bucket (`/api/users`) for every non-admin, non-actuator request
+  - Uses same `pathBucket()` logic as `LatencyFilter` to prevent cardinality explosion
+- **`RouteTrafficController`** (`@RestController`, `/admin/route-traffic`):
+  - `GET /admin/route-traffic` — `{enabled, routes}`, requires `ROLE_ADMIN`
+  - `POST /admin/route-traffic/reset` — clears all timestamps and totals
+
+### Tests added
+- **`RouteTrafficControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded records appear with correct totals and last1m counts, reset empties routes map
+  - user role returns 403, `pathBucket()` unit test verifying 2-segment extraction
+
+---
+
 ## [0.52.0] – 2026-08-24 — Phase 52: Request Accept Header Distribution
 
 ### Added
