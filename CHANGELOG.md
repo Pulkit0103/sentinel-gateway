@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.43.0] – 2026-08-24 — Phase 43: Request Path Length Guard
+
+### Added
+- **`PathLengthProperties`** (`@ConfigurationProperties(prefix="sentinel.path-length")`):
+  - `enabled` (default `true`), `maxPathLength` (default `2048`), `maxQueryLength` (default `4096`), `maxRecords` (default `100`)
+- **`PathLengthRecord`** (Java record): `timestamp, method, path, pathLength, queryLength, violation ("path"|"query")`
+- **`PathLengthRegistry`** (`@Component`): ring-buffer, `record`, `snapshot`, `count`, `clear`
+- **`PathLengthFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 5`):
+  - Returns HTTP 414 for path violations, HTTP 400 for query string violations
+  - Records each rejection in `PathLengthRegistry`
+  - Truncates stored path to 200 chars for oversized paths
+- **`PathLengthController`** (`@RestController`, `/admin/path-rejections`):
+  - `GET /admin/path-rejections` — `{enabled, maxPathLength, maxQueryLength, count, records}`, requires `ROLE_ADMIN`
+  - `POST /admin/path-rejections/clear` — empties the registry
+
+### Tests added
+- **`PathLengthFilterTest`** (7 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - normal path passes, path exceeding limit → 414, query exceeding limit → 400
+  - filter disabled → long path passes (404, not 414), rejection recorded in registry
+  - admin endpoint fields, clear endpoint empties registry
+
+---
+
 ## [0.42.0] – 2026-08-24 — Phase 42: Response Body Size Tracking
 
 ### Added

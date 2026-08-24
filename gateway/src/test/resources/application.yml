@@ -12,6 +12,12 @@ sentinel:
   security-headers:
     enabled: true
 
+  path-length:
+    enabled: true
+    max-path-length: 2048
+    max-query-length: 4096
+    max-records: 100
+
   response-size:
     enabled: true
     max-records: 50

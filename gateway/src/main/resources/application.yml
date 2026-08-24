@@ -138,6 +138,12 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  path-length:
+    enabled: true            # reject requests with excessively long paths or query strings
+    max-path-length: 2048    # 414 URI Too Long if path exceeds this
+    max-query-length: 4096   # 400 Bad Request if query string exceeds this
+    max-records: 100         # ring-buffer capacity for rejection history
+
   response-size:
     enabled: true   # track response Content-Length distribution for bandwidth monitoring
     max-records: 200  # ring-buffer depth for recent sample history
