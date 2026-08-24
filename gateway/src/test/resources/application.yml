@@ -12,6 +12,9 @@ sentinel:
   security-headers:
     enabled: true
 
+  method-stats:
+    enabled: true
+
   hop-count:
     enabled: true
     max-hops: 10

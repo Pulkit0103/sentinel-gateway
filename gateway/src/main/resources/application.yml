@@ -138,6 +138,9 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  method-stats:
+    enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
+
   hop-count:
     enabled: true   # reject requests with more X-Forwarded-For hops than max-hops (routing loop guard)
     max-hops: 10    # requests with more than this many proxy hops receive 400

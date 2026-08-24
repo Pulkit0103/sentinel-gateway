@@ -6,6 +6,27 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.46.0] – 2026-08-24 — Phase 46: HTTP Method Distribution Tracker
+
+### Added
+- **`MethodProperties`** (`@ConfigurationProperties(prefix="sentinel.method-stats")`):
+  - `enabled` (default `true`)
+- **`MethodRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` per-method counters + `AtomicLong total`
+  - `record(method)`, `snapshot()` → `{total, methods}`, `reset()`
+- **`MethodFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 7`):
+  - Records HTTP method name on every non-actuator request
+- **`MethodController`** (`@RestController`, `/admin/method-stats`):
+  - `GET /admin/method-stats` — `{enabled, total, methods}`, requires `ROLE_ADMIN`
+  - `POST /admin/method-stats/reset` — clears all counters
+
+### Tests added
+- **`MethodControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded GET/POST appear in snapshot, reset clears
+  - user role returns 403, DELETE/PATCH unit recording and reset
+
+---
+
 ## [0.45.0] – 2026-08-24 — Phase 45: Live Operations Dashboard
 
 ### Added
