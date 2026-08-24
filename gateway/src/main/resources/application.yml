@@ -202,6 +202,9 @@ sentinel:
   route-error-rate:
     enabled: true   # track per-route error (4xx/5xx) rates in 1-min/5-min/15-min sliding windows
 
+  throughput:
+    enabled: true   # track request throughput (RPS) in 1s/10s/60s sliding windows with peak tracking
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

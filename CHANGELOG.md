@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.66.0] – 2026-08-24 — Phase 66: Request Throughput Rate Monitor
+
+### Added
+- **`ThroughputProperties`** (`@ConfigurationProperties(prefix="sentinel.throughput")`):
+  - `enabled` (default `true`)
+- **`ThroughputRegistry`** (`@Component`):
+  - `ConcurrentLinkedDeque<Long>` of request timestamps for sliding window queries
+  - `peakRps` — CAS spin-loop tracks the highest 1-second RPS ever observed
+  - `record()` — appends current epoch-ms and updates peak
+  - `snapshot()` → `{total, peakRps, rps1s, rps10s, rps60s}` — all RPS values are rounded doubles
+  - `reset()`
+- **`ThroughputFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 25`):
+  - Records each request timestamp at filter entry (request-side, no beforeCommit needed)
+  - Skips `/actuator/**` and `/admin/**`
+- **`ThroughputController`** (`@RestController`, `/admin/throughput-stats`):
+  - `GET /admin/throughput-stats` — `{enabled, total, peakRps, rps1s, rps10s, rps60s}`, requires `ROLE_ADMIN`
+  - `POST /admin/throughput-stats/reset` — clears timestamps and peak
+
+### Tests added
+- **`ThroughputControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 6 seeded records → total=6, rps60s=0.1, reset clears total+peak
+  - user role returns 403, snapshot returns doubles for all RPS values
+
+---
+
 ## [0.65.0] – 2026-08-24 — Phase 65: Per-Route Error Rate Sliding Windows
 
 ### Added

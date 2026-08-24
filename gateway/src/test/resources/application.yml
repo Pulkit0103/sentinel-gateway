@@ -76,6 +76,9 @@ sentinel:
   route-error-rate:
     enabled: true
 
+  throughput:
+    enabled: true
+
   method-stats:
     enabled: true
 
