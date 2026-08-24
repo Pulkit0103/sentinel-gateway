@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.35.0] – 2026-08-24 — Phase 35: Error Rate Tracking
+
+### Added
+- **`ErrorRateRegistry`** (`@Component`):
+  - Per-path `{total, errors}` counters using `ConcurrentHashMap<String, RouteStats>` with `AtomicLong`
+  - `record(route, statusCode)` — increments total; increments errors if statusCode ≥ 400
+  - `snapshots()` — returns `Map<route, {total, errors, errorRatePct}>` with rounded percentage
+  - `routeCount()`, `reset()`
+- **`ErrorRateFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 3`):
+  - Uses `doFinally` to capture response status after chain completes
+  - Groups paths to 2-segment buckets: `/api/users/123` → `/api/users` (avoids cardinality explosion)
+  - Skips `/admin/**` and `/actuator/**`
+- **`ErrorRateController`** (`@RestController`, `/admin/error-rates`):
+  - `GET /admin/error-rates` — returns `{routeCount, routes}`, requires `ROLE_ADMIN`
+  - `POST /admin/error-rates/reset` — clears all counters
+
+### Tests added
+- **`ErrorRateRegistryTest`** (8 unit tests):
+  - 200 → total only, 500/400 → error counted, 50% error rate, multi-route, reset, pathBucket grouping
+- **`ErrorRateControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getErrorRates_admin_returnsExpectedFields`, `seededErrors_appearsInSnapshot`
+  - `resetCounters_clearsRegistry`, `getErrorRates_userRole_returns403`
+
+---
+
 ## [0.34.0] – 2026-08-24 — Phase 34: Config Summary Dashboard
 
 ### Added
