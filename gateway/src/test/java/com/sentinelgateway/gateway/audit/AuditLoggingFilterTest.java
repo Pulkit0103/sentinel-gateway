@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import com.sentinelgateway.gateway.analytics.AnalyticsService;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.*;
  *
  * AuditEventPublisher is mocked so tests verify that the filter emits the
  * correct AuditEvent — without needing Kafka or file I/O.
+ * AnalyticsService is also mocked to avoid needing a live Redis connection.
  *
  * Scenarios:
  *   Authenticated request → 200, ALLOWED audit event
@@ -60,6 +62,9 @@ class AuditLoggingFilterTest {
 
     @MockBean
     private AuditEventPublisher auditEventPublisher;
+
+    @MockBean
+    private AnalyticsService analyticsService;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) throws Exception {
@@ -104,6 +109,7 @@ class AuditLoggingFilterTest {
     @BeforeEach
     void configureMock() {
         when(auditEventPublisher.publish(any())).thenReturn(Mono.empty());
+        when(analyticsService.record(any())).thenReturn(Mono.empty());
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

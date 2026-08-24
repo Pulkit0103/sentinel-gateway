@@ -32,29 +32,44 @@ import reactor.core.publisher.Mono;
 public class JwtHeadersFilter implements GlobalFilter, Ordered {
 
     private final JwtPrincipalExtractor principalExtractor;
+    private final JwtClaimsForwardingProperties claimsForwardingProperties;
 
-    public JwtHeadersFilter(JwtPrincipalExtractor principalExtractor) {
+    public JwtHeadersFilter(JwtPrincipalExtractor principalExtractor,
+                             JwtClaimsForwardingProperties claimsForwardingProperties) {
         this.principalExtractor = principalExtractor;
+        this.claimsForwardingProperties = claimsForwardingProperties;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
-                .flatMap(auth -> extractPrincipal(auth, principalExtractor))
-                .map(principal -> {
-                    ServerHttpRequest.Builder req = exchange.getRequest().mutate()
-                            .header("X-User-Id", principal.userId());
+                .flatMap(auth -> extractPrincipal(auth, principalExtractor)
+                        .map(principal -> {
+                            ServerHttpRequest.Builder req = exchange.getRequest().mutate()
+                                    .header("X-User-Id", principal.userId());
 
-                    if (principal.tenantId() != null && !principal.tenantId().isBlank()) {
-                        req.header("X-Tenant-Id", principal.tenantId());
-                    }
-                    if (!principal.roles().isEmpty()) {
-                        req.header("X-User-Roles", String.join(",", principal.roles()));
-                    }
+                            if (principal.tenantId() != null && !principal.tenantId().isBlank()) {
+                                req.header("X-Tenant-Id", principal.tenantId());
+                            }
+                            if (!principal.roles().isEmpty()) {
+                                req.header("X-User-Roles", String.join(",", principal.roles()));
+                            }
 
-                    return (ServerWebExchange) exchange.mutate().request(req.build()).build();
-                })
+                            // Extra configurable claims forwarding (opt-in via sentinel.jwt.claims-forwarding.enabled)
+                            if (claimsForwardingProperties.isEnabled() && auth instanceof JwtAuthenticationToken jwtAuth) {
+                                var claims = jwtAuth.getToken().getClaims();
+                                for (var mapping : claimsForwardingProperties.getMappings()) {
+                                    Object val = claims.get(mapping.getClaim());
+                                    if (val instanceof String s && !s.isBlank()) {
+                                        req.header(mapping.getHeader(), s);
+                                    }
+                                }
+                            }
+
+                            return (ServerWebExchange) exchange.mutate().request(req.build()).build();
+                        })
+                )
                 .defaultIfEmpty(exchange)
                 .flatMap(chain::filter);
     }

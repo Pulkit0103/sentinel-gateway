@@ -107,9 +107,9 @@ management:
 info:
   app:
     name: Sentinel Gateway
-    version: 0.1.0-SNAPSHOT
+    version: 0.4.0-SNAPSHOT
     description: Zero-Trust API Security and Traffic Management Platform
-    phase: Phase 3 - OAuth2/OIDC/Keycloak
+    phase: Phase 4 - Request/Response Transformation
 
 # ─── Route Definitions ────────────────────────────────────────────────────────
 # Each entry maps to a RouteDefinition domain object.
@@ -119,6 +119,189 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  slow-request:
+    enabled: true        # detect and record requests exceeding threshold-ms
+    threshold-ms: 2000   # requests taking longer than this (in ms) are recorded
+    max-records: 100     # ring-buffer capacity
+
+  request-sanitizer:
+    enabled: true            # validate header safety on every request
+    max-header-value-length: 8192  # reject header values longer than this (bytes)
+    block-null-bytes: true   # reject header values containing null bytes (\0)
+
+  security-headers:
+    enabled: true   # adds OWASP recommended security headers to every response
+    # headers:
+    #   X-Content-Type-Options: nosniff          # default
+    #   X-Frame-Options: DENY                    # default
+    #   Referrer-Policy: strict-origin-when-cross-origin  # default
+    #   X-XSS-Protection: "0"                   # default
+    #   Permissions-Policy: "geolocation=()"    # optional addition
+
+  content-type-stats:
+    enabled: true   # track response Content-Type distribution (application/json, text/html, etc.)
+
+  user-agent-stats:
+    enabled: true   # track request User-Agent category distribution (browser, mobile, bot, service)
+
+  ip-counter:
+    enabled: true   # track per-IP request counts and expose top-N "top talkers" list
+    top-n: 20       # number of top IPs returned in /admin/ip-stats
+
+  clock-skew:
+    enabled: true                   # detect requests with X-Request-Timestamp far from server time
+    header-name: X-Request-Timestamp  # epoch-second timestamp header sent by clients
+    tolerance-seconds: 300          # flag requests whose timestamp deviates by more than this
+    max-records: 100                # ring-buffer capacity for skewed-request history
+
+  header-audit:
+    enabled: true   # audit presence/absence of security and cache-control headers on responses
+    tracked-headers:
+      - Content-Security-Policy
+      - X-Content-Type-Options
+      - X-Frame-Options
+      - Strict-Transport-Security
+      - Cache-Control
+      - Referrer-Policy
+
+  accept-stats:
+    enabled: true   # track request Accept header distribution (application/json, text/html, etc.)
+
+  route-traffic:
+    enabled: true   # track per-route request counts within 1-min, 5-min, 15-min sliding windows
+
+  encoding-stats:
+    enabled: true   # track request Content-Encoding distribution (gzip, br, deflate, none)
+
+  error-path:
+    enabled: true   # record recent 4xx/5xx error responses with path and status for triage
+    max-records: 200  # ring-buffer capacity for error history
+
+  cache-ttl:
+    enabled: true   # track response Cache-Control max-age distribution (no-cache/short/medium/long)
+
+  header-count:
+    enabled: true   # track request header count distribution (low/normal/elevated/high buckets)
+
+  response-header-size:
+    enabled: true   # track response header total-size distribution (small/medium/large/oversized)
+
+  query-param-count:
+    enabled: true   # track request query-parameter count distribution (zero/few/moderate/many)
+
+  scheme-stats:
+    enabled: true   # track request URI scheme distribution (http, https)
+
+  path-depth:
+    enabled: true   # track URL path-depth distribution (root/shallow/moderate/deep segments)
+
+  referer-stats:
+    enabled: true   # track Referer header domain distribution (top-N domains by request count)
+    top-n: 20
+
+  route-error-rate:
+    enabled: true   # track per-route error (4xx/5xx) rates in 1-min/5-min/15-min sliding windows
+
+  throughput:
+    enabled: true   # track request throughput (RPS) in 1s/10s/60s sliding windows with peak tracking
+
+  method-stats:
+    enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
+
+  hop-count:
+    enabled: true   # reject requests with more X-Forwarded-For hops than max-hops (routing loop guard)
+    max-hops: 10    # requests with more than this many proxy hops receive 400
+
+  path-length:
+    enabled: true            # reject requests with excessively long paths or query strings
+    max-path-length: 2048    # 414 URI Too Long if path exceeds this
+    max-query-length: 4096   # 400 Bad Request if query string exceeds this
+    max-records: 100         # ring-buffer capacity for rejection history
+
+  response-size:
+    enabled: true   # track response Content-Length distribution for bandwidth monitoring
+    max-records: 200  # ring-buffer depth for recent sample history
+
+  concurrent-requests:
+    enabled: true   # track in-flight request count, peak concurrency, and total completed
+
+  status-codes:
+    enabled: true   # track HTTP response status code distribution (per-code and 2xx/3xx/4xx/5xx)
+
+  latency:
+    enabled: true                    # track per-route response latency percentiles
+    max-samples-per-route: 1000      # ring-buffer depth per route
+
+  request-size:
+    enabled: true              # reject requests whose Content-Length exceeds max-body-bytes
+    max-body-bytes: 10485760   # 10 MB default; requests declaring a larger body receive 413
+    max-records: 100           # ring-buffer capacity for oversized-request history
+
+  jwt-expiry-warning:
+    enabled: true              # add X-JWT-Expires-In header when JWT is expiring soon
+    warning-window-seconds: 300  # warn when JWT expires within this many seconds
+    header-name: X-JWT-Expires-In  # response header name for the expiry warning
+
+  ip-access:
+    enabled: false  # set to true to enable IP-based access control
+    mode: DENYLIST  # DENYLIST (block listed IPs) or ALLOWLIST (only allow listed IPs)
+    # global-list:
+    #   - "10.0.0.1"
+    # routes:
+    #   payment-service:
+    #     - "192.168.1.100"
+
+  claim-authorization:
+    enabled: false  # set to true and configure routes map to enforce JWT claim values per route
+    # routes:
+    #   payment-service:
+    #     - claim: department
+    #       allowed-values: [finance, engineering]
+
+  sla:
+    enabled: false  # set to true and configure routes map to track response time SLAs
+    # routes:
+    #   payment-service: 500   # must respond within 500ms
+    #   order-service: 1000
+
+  required-headers:
+    enabled: false  # set to true and configure routes map to enforce required headers per route
+    # routes:
+    #   payment-service:
+    #     - X-Idempotency-Key
+    #   order-service:
+    #     - X-Correlation-Id
+
+  maintenance:
+    enabled: false  # set to true via POST /admin/maintenance/enable to block all upstream traffic
+    message: "Service temporarily unavailable for maintenance"
+    retry-after-seconds: 60
+    bypass-roles:
+      - ROLE_ADMIN
+
+  drain:
+    enabled: true
+    timeout-seconds: 30
+
+  transform:
+    sanitize-request-headers:
+      - X-User-Id
+      - X-Tenant-Id
+      - X-User-Roles
+      - X-Auth-Type
+    remove-response-headers:
+      - Server
+      - X-Powered-By
+      - Via
+
+  analytics:
+    enabled: true
+    retention-days: 7
+    top-n: 10
+
+  cache:
+    enabled: false  # set to true when Redis is available (Docker/K8s)
+
   audit:
     kafka:
       enabled: false  # set to true when Kafka is available (Docker/K8s)
@@ -162,6 +345,9 @@ sentinel:
     timestamp-tolerance-seconds: 300
     nonce-ttl-seconds: 600
     shared-secret: ${HMAC_SHARED_SECRET:change-me-in-production}
+  revocation:
+    enabled: false  # set to true when Redis is available
+
   quota:
     enabled: false  # set to true when Redis is available
     default-daily-limit: 100000
@@ -177,11 +363,26 @@ sentinel:
         requests-per-minute: 10000
       DEFAULT:
         requests-per-minute: 1000
+
+  tenant-rate-limit:
+    enabled: false  # set to true to activate per-tenant rate limit overrides
+    # tenants:
+    #   acme-corp:
+    #     requests-per-minute: 5000
+    #   trial-tenant:
+    #     requests-per-minute: 50
+  jwt:
+    claims-forwarding:
+      enabled: false  # set to true and add mappings to forward extra JWT claims as headers
+
   security:
     jwt:
       # Token issuer validated against every incoming JWT's `iss` claim.
       # Must match the Keycloak realm URL exactly (scheme + host + port + path).
       issuer: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/sentinel}
+      # Required JWT audience values. If empty, audience is not validated.
+      # At least one value in the JWT `aud` claim must be in this list.
+      required-audiences: []
   gateway:
     routes:
       - route-id: hello-service
@@ -230,6 +431,9 @@ sentinel:
         required-scopes: []
         tenant-required: false
         rate-limit-policy: DEFAULT
+
+  webhook:
+    enabled: false  # set to true to enable webhook event emission (SIEM / alerting)
 
   resilience:
     enabled: true  # set to false to disable all resilience filters globally

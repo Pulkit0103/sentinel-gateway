@@ -43,6 +43,7 @@ import java.util.Set;
 public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
 
     private static final Logger log = LoggerFactory.getLogger(RouteAuthorizationFilter.class);
+    private static final Logger auditLog = LoggerFactory.getLogger("AUDIT_SECURITY");
 
     private final RouteRegistry routeRegistry;
     private final JwtPrincipalExtractor principalExtractor;
@@ -72,13 +73,23 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .flatMap(auth -> extractPrincipal(auth))
-                .map(principal -> isAuthorized(principal, requiredScopes))
-                .defaultIfEmpty(false)
-                .flatMap(authorized -> {
+                .map(principal -> {
+                    Set<String> effective = new HashSet<>(principal.scopes());
+                    effective.addAll(RolePermissions.effectivePermissionNames(principal.roles()));
+                    return effective;
+                })
+                .defaultIfEmpty(new HashSet<>())
+                .flatMap(effective -> {
+                    boolean authorized = effective.containsAll(requiredScopes);
                     if (authorized) {
                         return chain.filter(exchange);
                     }
-                    log.warn("Route access denied on '{}' — required={}", matchedRoute.getId(), requiredScopes);
+                    String requestId = exchange.getRequest().getHeaders().getFirst("X-Request-ID");
+                    String path = exchange.getRequest().getPath().value();
+                    String routeId = matchedRoute.getId();
+                    log.warn("Route access denied on '{}' — required={}", routeId, requiredScopes);
+                    auditLog.warn("requestId={} path={} routeId={} outcome=FORBIDDEN_SCOPE reason=\"Required scopes: {} not satisfied by: {}\"",
+                            requestId, path, routeId, requiredScopes, effective);
                     exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                     return exchange.getResponse().setComplete();
                 });
@@ -92,12 +103,6 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             return Mono.just(apiKeyAuth.getPrincipal());
         }
         return Mono.empty();
-    }
-
-    private boolean isAuthorized(AuthenticatedPrincipal principal, List<String> requiredScopes) {
-        Set<String> effective = new HashSet<>(principal.scopes()); // direct scopes from credential
-        effective.addAll(RolePermissions.effectivePermissionNames(principal.roles())); // role-derived
-        return effective.containsAll(requiredScopes);
     }
 
     @Override

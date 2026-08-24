@@ -1,6 +1,7 @@
 package com.sentinelgateway.gateway.routing;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -24,6 +25,13 @@ public final class RouteDefinition {
     private final List<String> requiredScopes;
     private final boolean tenantRequired;
     private final String rateLimitPolicy;
+    private final int stripPrefix;
+    private final Map<String, String> addRequestHeaders;
+    private final List<String> allowedIps;
+    private final List<String> blockedIps;
+    private final Long maxBodyBytes;
+    private final Long timeoutMs;
+    private final Integer cacheTtlSeconds;
 
     public RouteDefinition(
             String routeId,
@@ -34,6 +42,94 @@ public final class RouteDefinition {
             List<String> requiredScopes,
             boolean tenantRequired,
             String rateLimitPolicy) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy, 0, Map.of());
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy,
+                stripPrefix, addRequestHeaders, List.of(), List.of());
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders,
+            List<String> allowedIps,
+            List<String> blockedIps) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy,
+                stripPrefix, addRequestHeaders, allowedIps, blockedIps, null);
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders,
+            List<String> allowedIps,
+            List<String> blockedIps,
+            Long maxBodyBytes) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy,
+                stripPrefix, addRequestHeaders, allowedIps, blockedIps, maxBodyBytes, null);
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders,
+            List<String> allowedIps,
+            List<String> blockedIps,
+            Long maxBodyBytes,
+            Long timeoutMs) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy,
+                stripPrefix, addRequestHeaders, allowedIps, blockedIps, maxBodyBytes, timeoutMs, null);
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders,
+            List<String> allowedIps,
+            List<String> blockedIps,
+            Long maxBodyBytes,
+            Long timeoutMs,
+            Integer cacheTtlSeconds) {
 
         this.routeId = Objects.requireNonNull(routeId, "routeId must not be null");
         this.path = Objects.requireNonNull(path, "path must not be null");
@@ -43,6 +139,13 @@ public final class RouteDefinition {
         this.requiredScopes = requiredScopes != null ? List.copyOf(requiredScopes) : List.of();
         this.tenantRequired = tenantRequired;
         this.rateLimitPolicy = rateLimitPolicy != null ? rateLimitPolicy : "DEFAULT";
+        this.stripPrefix = stripPrefix;
+        this.addRequestHeaders = addRequestHeaders != null ? Map.copyOf(addRequestHeaders) : Map.of();
+        this.allowedIps = allowedIps != null ? List.copyOf(allowedIps) : List.of();
+        this.blockedIps = blockedIps != null ? List.copyOf(blockedIps) : List.of();
+        this.maxBodyBytes = maxBodyBytes;
+        this.timeoutMs = timeoutMs;
+        this.cacheTtlSeconds = cacheTtlSeconds;
     }
 
     public String routeId()         { return routeId; }
@@ -53,6 +156,13 @@ public final class RouteDefinition {
     public List<String> requiredScopes() { return requiredScopes; }
     public boolean tenantRequired() { return tenantRequired; }
     public String rateLimitPolicy() { return rateLimitPolicy; }
+    public int stripPrefix()        { return stripPrefix; }
+    public Map<String, String> addRequestHeaders() { return addRequestHeaders; }
+    public List<String> allowedIps() { return allowedIps; }
+    public List<String> blockedIps() { return blockedIps; }
+    public Long maxBodyBytes()         { return maxBodyBytes; }
+    public Long timeoutMs()            { return timeoutMs; }
+    public Integer cacheTtlSeconds()   { return cacheTtlSeconds; }
 
     @Override
     public String toString() {

@@ -3,6 +3,8 @@ package com.sentinelgateway.gateway.admin;
 import com.sentinelgateway.gateway.apikey.ApiKey;
 import com.sentinelgateway.gateway.apikey.ApiKeyRepository;
 import com.sentinelgateway.gateway.apikey.ApiKeyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -13,6 +15,8 @@ import java.time.Instant;
 @RestController
 @RequestMapping("/admin/api-keys")
 public class ApiKeyAdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(ApiKeyAdminController.class);
 
     private final ApiKeyRepository repository;
     private final ApiKeyService service;
@@ -45,6 +49,26 @@ public class ApiKeyAdminController {
                 ));
     }
 
+    /**
+     * Rotate an API key secret by ID.
+     * The old secret is immediately invalidated; the new raw key is returned exactly once.
+     * Returns 404 if the key ID does not exist.
+     */
+    @PostMapping("/{id}/rotate")
+    public Mono<RotatedApiKeyResponse> rotateKey(@PathVariable("id") Long id) {
+        return service.rotate(id)
+                .map(r -> new RotatedApiKeyResponse(
+                        r.newRawKey(),
+                        r.entity().getId(),
+                        r.entity().getClientId(),
+                        r.entity().getStatus(),
+                        r.entity().getExpiresAt()
+                ))
+                .doOnNext(r -> log.info("API key {} rotated for client {}", r.id(), r.clientId()))
+                .switchIfEmpty(Mono.error(new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "API key not found: " + id)));
+    }
+
     /** Revoke an API key by ID. Idempotent — revoking a non-existent key returns 204. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -53,6 +77,7 @@ public class ApiKeyAdminController {
     }
 
     record CreateKeyRequest(String clientId, String tenantId, String scopes, Instant expiresAt) {}
+    record RotatedApiKeyResponse(String newRawKey, Long id, String clientId, String status, Instant expiresAt) {}
 
     record CreatedApiKeyResponse(String rawKey, Long id, String clientId, String tenantId,
                                  String status, String scopes, Instant createdAt, Instant expiresAt) {}

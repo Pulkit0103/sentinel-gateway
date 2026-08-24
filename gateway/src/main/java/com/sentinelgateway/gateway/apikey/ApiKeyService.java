@@ -54,6 +54,25 @@ public class ApiKeyService {
     }
 
     /**
+     * Rotates the secret for an existing API key.
+     *
+     * Generates a new raw key, updates the stored hash, and returns the new raw key.
+     * The old key is immediately invalidated — only the new key will authenticate.
+     * The returned raw key is shown exactly once and never stored.
+     *
+     * Returns empty if the key ID is not found.
+     */
+    public Mono<RotatedApiKey> rotate(Long keyId) {
+        return repository.findById(keyId)
+                .flatMap(key -> {
+                    String newRawKey = generateRawKey();
+                    key.setKeyHash(sha256Hex(newRawKey));
+                    return repository.save(key)
+                            .map(saved -> new RotatedApiKey(newRawKey, saved));
+                });
+    }
+
+    /**
      * Marks the key as REVOKED. Idempotent — revoking an already-revoked key is a no-op.
      */
     public Mono<ApiKey> revoke(Long keyId) {
@@ -82,4 +101,5 @@ public class ApiKeyService {
     }
 
     public record CreatedApiKey(String rawKey, ApiKey entity) {}
+    public record RotatedApiKey(String newRawKey, ApiKey entity) {}
 }

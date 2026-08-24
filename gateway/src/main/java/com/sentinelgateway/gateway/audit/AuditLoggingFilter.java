@@ -1,5 +1,7 @@
 package com.sentinelgateway.gateway.audit;
 
+import com.sentinelgateway.gateway.analytics.AnalyticsRecord;
+import com.sentinelgateway.gateway.analytics.AnalyticsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.route.Route;
@@ -18,7 +20,8 @@ import java.net.InetSocketAddress;
 import java.time.Instant;
 
 /**
- * Emits a structured {@link AuditEvent} for every request processed by the gateway.
+ * Emits a structured {@link AuditEvent} for every request processed by the gateway,
+ * and records an {@link AnalyticsRecord} in parallel.
  *
  * Runs as the outermost WebFilter (order {@code HIGHEST_PRECEDENCE + 1}) so it
  * wraps threat detection, authentication, authorization, and routing.  The audit
@@ -32,16 +35,21 @@ import java.time.Instant;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class AuditLoggingFilter implements WebFilter {
 
+    private static final String START_TIME_ATTR = "_sg_start_ms";
+
     private static final Logger log = LoggerFactory.getLogger(AuditLoggingFilter.class);
 
     private final AuditEventPublisher publisher;
+    private final AnalyticsService analytics;
 
-    public AuditLoggingFilter(AuditEventPublisher publisher) {
+    public AuditLoggingFilter(AuditEventPublisher publisher, AnalyticsService analytics) {
         this.publisher = publisher;
+        this.analytics = analytics;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        exchange.getAttributes().put(START_TIME_ATTR, System.currentTimeMillis());
         return chain.filter(exchange)
                 .then(Mono.defer(() -> publishAuditEvent(exchange)))
                 .onErrorResume(ex -> Mono.defer(() -> publishAuditEvent(exchange))
@@ -62,6 +70,8 @@ public class AuditLoggingFilter implements WebFilter {
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         String routeId = route != null ? route.getId() : null;
 
+        String outcome = AuditEvent.outcomeFor(statusCode);
+
         AuditEvent event = new AuditEvent(
                 requestId,
                 Instant.now().toString(),
@@ -70,14 +80,32 @@ public class AuditLoggingFilter implements WebFilter {
                 path,
                 routeId,
                 statusCode,
-                AuditEvent.outcomeFor(statusCode)
+                outcome
         );
 
-        return publisher.publish(event)
+        // Compute request duration
+        Long startMs = exchange.getAttribute(START_TIME_ATTR);
+        long durationMs = startMs != null ? System.currentTimeMillis() - startMs : 0L;
+
+        // Tenant from request header
+        String tenantId = req.getHeaders().getFirst("X-Tenant-Id");
+
+        AnalyticsRecord analyticsRecord = new AnalyticsRecord(
+                routeId, tenantId, outcome, statusCode, method, durationMs);
+
+        Mono<Void> auditOp = publisher.publish(event)
                 .onErrorResume(e -> {
                     log.error("Failed to publish audit event for {} {}: {}", method, path, e.getMessage());
                     return Mono.empty();
                 });
+
+        Mono<Void> analyticsOp = analytics.record(analyticsRecord)
+                .onErrorResume(e -> {
+                    log.warn("Failed to record analytics for {} {}: {}", method, path, e.getMessage());
+                    return Mono.empty();
+                });
+
+        return Mono.when(auditOp, analyticsOp);
     }
 
     private String extractClientIp(ServerHttpRequest req) {
