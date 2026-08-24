@@ -2,6 +2,9 @@ sentinel:
   analytics:
     enabled: false
 
+  cache:
+    enabled: false
+
   audit:
     kafka:
       enabled: false

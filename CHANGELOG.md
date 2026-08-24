@@ -6,6 +6,57 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.11.0] – 2026-08-24 — Phase 11: Per-Route Response Caching
+
+### Added
+- `cache_ttl_seconds INT` column added to the `routes` table (NULL = no caching) in both
+  `gateway/src/main/resources/schema.sql` and `gateway/src/test/resources/schema.sql`
+- `RouteEntity`: new `@Column("cache_ttl_seconds") Integer cacheTtlSeconds` field with
+  getter/setter; `toDomain()` and `from()` propagate the value
+- `RouteDefinition`: new `cacheTtlSeconds()` accessor (nullable `Integer`); added a 15-arg
+  canonical constructor; the 14-arg constructor delegates to it with `null`, preserving
+  backward compatibility for all existing call sites
+- `RouteDefinitionProperties.RouteEntry`: new `cacheTtlSeconds` (`Integer`) field bound from
+  `sentinel.gateway.routes[N].cache-ttl-seconds`; `toRouteDefinition()` passes it through
+- `RouteService.update()`: propagates `cacheTtlSeconds` on route updates
+- `CacheProperties` (`@Component`, `@ConfigurationProperties("sentinel.cache")`): single
+  `enabled` boolean (default `false`); controls whether the cache filter bean is instantiated
+- `ResponseCacheFilter` (`GlobalFilter`, order `Ordered.HIGHEST_PRECEDENCE + 4`):
+  - Registered only when `sentinel.cache.enabled=true` via `@ConditionalOnProperty`
+  - Skips all non-GET requests immediately
+  - Looks up the matched route from `RouteRepository`; skips caching when `cacheTtlSeconds`
+    is null or ≤ 0
+  - Cache key format: `sentinel:cache:{routeId}:{path}[?{query}]`
+  - Cache HIT: writes the cached body directly to the response with `Content-Type:
+    application/json`, HTTP 200, and `X-Cache: HIT`; upstream is not called
+  - Cache MISS: wraps the response in a `ServerHttpResponseDecorator`; intercepts
+    `writeWith()` on HTTP 200 responses; assembles the full body bytes, stores them in
+    Redis with the route's TTL, and returns the body to the caller with `X-Cache: MISS`
+  - Skips caching bodies > 1 MB to avoid Redis memory pressure
+  - Cache write failures are logged at WARN level and never propagate to the caller
+  - Static package-private `buildCacheKey()` method enables unit testing without Spring
+- `sentinel.cache.enabled: false` added to both `application.yml` (main) and
+  `application.yml` (test) so the filter is absent in all existing integration tests
+- `ResponseCacheFilterTest` (10 unit tests, `@ExtendWith(MockitoExtension.class)`):
+  - 8 tests verifying `buildCacheKey()` format: prefix correctness, query inclusion/
+    omission, route/path/query differentiation
+  - 2 tests verifying `CacheProperties` defaults and mutability
+- Total test suite: 203 tests, 0 failures, 0 errors
+
+### Design notes
+- `@ConditionalOnProperty(havingValue = "true")` means the bean is entirely absent when
+  caching is disabled — no Redis connection is attempted in tests or Redis-free environments
+- Order `HIGHEST_PRECEDENCE + 4` places the cache filter after `RequestSanitizationFilter`
+  (+2), `TracingFilter` (+3), and before `JwtRevocationFilter` (+5); cached responses
+  bypass the upstream but still go through all upstream response processing
+- `ServerHttpResponseDecorator.writeWith()` is used (not `ModifyResponseBodyGatewayFilterFactory`)
+  for explicit byte-level control and to avoid the complex `Encoder`/`Decoder` pipeline
+  that `ModifyResponseBodyGatewayFilterFactory` requires
+- The `DataBufferUtils.release()` call in `assembleBytes()` ensures no memory leak even
+  when the body is too large to cache
+
+---
+
 ## [0.10.0] – 2026-08-24 — Phase 10: Correlation ID & Tracing Header Propagation
 
 ### Added

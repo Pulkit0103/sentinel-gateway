@@ -122,6 +122,7 @@ public class RouteService implements ApplicationRunner {
                     entity.setBlockedIps(RouteEntity.from(updated).getBlockedIps());
                     entity.setMaxBodyBytes(updated.maxBodyBytes());
                     entity.setTimeoutMs(updated.timeoutMs());
+                    entity.setCacheTtlSeconds(updated.cacheTtlSeconds());
                     entity.setUpdatedAt(LocalDateTime.now());
                     return repository.save(entity);
                 })

@@ -31,6 +31,7 @@ public final class RouteDefinition {
     private final List<String> blockedIps;
     private final Long maxBodyBytes;
     private final Long timeoutMs;
+    private final Integer cacheTtlSeconds;
 
     public RouteDefinition(
             String routeId,
@@ -109,6 +110,26 @@ public final class RouteDefinition {
             List<String> blockedIps,
             Long maxBodyBytes,
             Long timeoutMs) {
+        this(routeId, path, serviceUri, methods, enabled, requiredScopes, tenantRequired, rateLimitPolicy,
+                stripPrefix, addRequestHeaders, allowedIps, blockedIps, maxBodyBytes, timeoutMs, null);
+    }
+
+    public RouteDefinition(
+            String routeId,
+            String path,
+            String serviceUri,
+            List<String> methods,
+            boolean enabled,
+            List<String> requiredScopes,
+            boolean tenantRequired,
+            String rateLimitPolicy,
+            int stripPrefix,
+            Map<String, String> addRequestHeaders,
+            List<String> allowedIps,
+            List<String> blockedIps,
+            Long maxBodyBytes,
+            Long timeoutMs,
+            Integer cacheTtlSeconds) {
 
         this.routeId = Objects.requireNonNull(routeId, "routeId must not be null");
         this.path = Objects.requireNonNull(path, "path must not be null");
@@ -124,6 +145,7 @@ public final class RouteDefinition {
         this.blockedIps = blockedIps != null ? List.copyOf(blockedIps) : List.of();
         this.maxBodyBytes = maxBodyBytes;
         this.timeoutMs = timeoutMs;
+        this.cacheTtlSeconds = cacheTtlSeconds;
     }
 
     public String routeId()         { return routeId; }
@@ -138,8 +160,9 @@ public final class RouteDefinition {
     public Map<String, String> addRequestHeaders() { return addRequestHeaders; }
     public List<String> allowedIps() { return allowedIps; }
     public List<String> blockedIps() { return blockedIps; }
-    public Long maxBodyBytes()       { return maxBodyBytes; }
-    public Long timeoutMs()          { return timeoutMs; }
+    public Long maxBodyBytes()         { return maxBodyBytes; }
+    public Long timeoutMs()            { return timeoutMs; }
+    public Integer cacheTtlSeconds()   { return cacheTtlSeconds; }
 
     @Override
     public String toString() {

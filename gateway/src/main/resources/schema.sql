@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS security_policies (
 -- Phase 7: Added allowed_ips and blocked_ips columns for per-route IP filtering
 -- Phase 8: Added max_body_bytes column for per-route request size limiting
 -- Phase 9: Added timeout_ms column for per-route response timeout
+-- Phase 11: Added cache_ttl_seconds column for per-route response caching
 CREATE TABLE IF NOT EXISTS routes (
     id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
     route_id             VARCHAR(128)  NOT NULL UNIQUE,
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS routes (
     blocked_ips          VARCHAR(1024),
     max_body_bytes       BIGINT,
     timeout_ms           BIGINT,
+    cache_ttl_seconds    INT,
     created_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -64,6 +64,9 @@ public class RouteEntity {
     @Column("timeout_ms")
     private Long timeoutMs;
 
+    @Column("cache_ttl_seconds")
+    private Integer cacheTtlSeconds;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 
@@ -111,7 +114,8 @@ public class RouteEntity {
                 allowedIpList(),
                 blockedIpList(),
                 maxBodyBytes,
-                timeoutMs
+                timeoutMs,
+                cacheTtlSeconds
         );
     }
 
@@ -131,6 +135,7 @@ public class RouteEntity {
         e.blockedIps = joinOrNull(d.blockedIps());
         e.maxBodyBytes = d.maxBodyBytes();
         e.timeoutMs = d.timeoutMs();
+        e.cacheTtlSeconds = d.cacheTtlSeconds();
         e.createdAt = LocalDateTime.now();
         e.updatedAt = LocalDateTime.now();
         return e;
@@ -189,6 +194,8 @@ public class RouteEntity {
     public void setMaxBodyBytes(Long v)        { this.maxBodyBytes = v; }
     public Long getTimeoutMs()                 { return timeoutMs; }
     public void setTimeoutMs(Long v)           { this.timeoutMs = v; }
+    public Integer getCacheTtlSeconds()        { return cacheTtlSeconds; }
+    public void setCacheTtlSeconds(Integer v)  { this.cacheTtlSeconds = v; }
     public LocalDateTime getCreatedAt()        { return createdAt; }
     public void setCreatedAt(LocalDateTime v)  { this.createdAt = v; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }

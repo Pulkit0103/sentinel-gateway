@@ -52,13 +52,14 @@ public class RouteDefinitionProperties {
         private List<String> blockedIps = new ArrayList<>();
         private Long maxBodyBytes;
         private Long timeoutMs;
+        private Integer cacheTtlSeconds;
 
         public RouteDefinition toRouteDefinition() {
             return new RouteDefinition(
                     routeId, path, serviceUri, methods, enabled,
                     requiredScopes, tenantRequired, rateLimitPolicy,
                     stripPrefix, addRequestHeaders,
-                    allowedIps, blockedIps, maxBodyBytes, timeoutMs);
+                    allowedIps, blockedIps, maxBodyBytes, timeoutMs, cacheTtlSeconds);
         }
 
         // ── getters / setters ─────────────────────────────────────────────
@@ -103,5 +104,8 @@ public class RouteDefinitionProperties {
 
         public Long getTimeoutMs() { return timeoutMs; }
         public void setTimeoutMs(Long v) { this.timeoutMs = v; }
+
+        public Integer getCacheTtlSeconds() { return cacheTtlSeconds; }
+        public void setCacheTtlSeconds(Integer v) { this.cacheTtlSeconds = v; }
     }
 }

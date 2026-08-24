@@ -135,6 +135,9 @@ sentinel:
     retention-days: 7
     top-n: 10
 
+  cache:
+    enabled: false  # set to true when Redis is available (Docker/K8s)
+
   audit:
     kafka:
       enabled: false  # set to true when Kafka is available (Docker/K8s)
