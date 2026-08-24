@@ -6,6 +6,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.38.0] – 2026-08-24 — Phase 38: Response Latency Percentiles
+
+### Added
+- **`LatencyProperties`** (`@ConfigurationProperties(prefix="sentinel.latency")`):
+  - `enabled` (default `true`), `maxSamplesPerRoute` (default `1000`)
+- **`LatencySnapshot`** (Java record): `p50Ms, p95Ms, p99Ms, sampleCount`; percentile computed via ceiling index
+- **`LatencyRegistry`** (`@Component`):
+  - Per-route `LinkedBlockingDeque<Long>` ring-buffers bounded by `maxSamplesPerRoute`
+  - `record(route, durationMs)`, `snapshots()` → `Map<route, LatencySnapshot>`, `routeCount()`, `reset()`
+  - Percentiles computed on a sorted copy at query time
+- **`LatencyFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 4`):
+  - Captures start time before chain; records duration in `doFinally` after response completes
+  - Buckets paths to 2 segments (same strategy as `ErrorRateFilter`)
+  - Skips `/admin/**` and `/actuator/**`
+- **`LatencyController`** (`@RestController`, `/admin/latency`):
+  - `GET /admin/latency` — `{enabled, routeCount, routes}`, requires `ROLE_ADMIN`
+  - `POST /admin/latency/reset` — clears all route buffers
+
+### Tests added
+- **`LatencyRegistryTest`** (7 unit tests):
+  - empty registry, single-sample percentiles, multi-sample percentiles, ring-buffer eviction
+  - multiple independent routes, reset, pathBucket utility
+- **`LatencyControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded samples visible, reset clears registry, user role returns 403
+
+---
+
 ## [0.37.0] – 2026-08-24 — Phase 37: Request Size Guard
 
 ### Added

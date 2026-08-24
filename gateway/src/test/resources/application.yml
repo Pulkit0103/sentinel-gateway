@@ -12,6 +12,10 @@ sentinel:
   security-headers:
     enabled: true
 
+  latency:
+    enabled: true
+    max-samples-per-route: 100
+
   request-size:
     enabled: true
     max-body-bytes: 10485760

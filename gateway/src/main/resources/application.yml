@@ -138,6 +138,10 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  latency:
+    enabled: true                    # track per-route response latency percentiles
+    max-samples-per-route: 1000      # ring-buffer depth per route
+
   request-size:
     enabled: true              # reject requests whose Content-Length exceeds max-body-bytes
     max-body-bytes: 10485760   # 10 MB default; requests declaring a larger body receive 413
