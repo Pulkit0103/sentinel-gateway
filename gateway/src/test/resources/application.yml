@@ -1,4 +1,7 @@
 sentinel:
+  required-headers:
+    enabled: false
+
   maintenance:
     enabled: false
 

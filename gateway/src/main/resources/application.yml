@@ -119,6 +119,14 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  required-headers:
+    enabled: false  # set to true and configure routes map to enforce required headers per route
+    # routes:
+    #   payment-service:
+    #     - X-Idempotency-Key
+    #   order-service:
+    #     - X-Correlation-Id
+
   maintenance:
     enabled: false  # set to true via POST /admin/maintenance/enable to block all upstream traffic
     message: "Service temporarily unavailable for maintenance"

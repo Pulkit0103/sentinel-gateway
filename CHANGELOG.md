@@ -6,6 +6,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.19.0] – 2026-08-24 — Phase 19: Required Header Validation
+
+### Added
+- **`RequiredHeadersProperties`** (`@Component`, `@ConfigurationProperties("sentinel.required-headers")`):
+  - `enabled: boolean` (default `false`) — master switch
+  - `routes: Map<String, List<String>>` — maps routeId → list of required header names
+  - `requiredHeadersForRoute(routeId)` helper — returns empty list for unconfigured routes
+- **`RequiredHeadersFilter`** (`GlobalFilter`, order `HIGHEST_PRECEDENCE + 5`):
+  - Reads `GATEWAY_ROUTE_ATTR` to identify the matched route
+  - For each configured route, checks that all required headers are present in the request
+  - Missing headers → 400 Bad Request with JSON body:
+    `{"status":400,"error":"Missing required header","missing":["X-Idempotency-Key"]}`
+  - Lists ALL missing headers in one response; partial presence reported correctly
+  - No-op when `enabled=false` or route has no configured required headers
+- **`application.yml`** (main and test): `sentinel.required-headers.enabled: false` block added
+
+### Tests added
+- **`RequiredHeadersPropertiesTest`** (7 unit tests): verifies defaults and mutator round-trips
+- **`RequiredHeadersFilterTest`** (6 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `allRequiredHeadersPresent_returns200` — all headers present → 200
+  - `missingRequiredHeader_returns400` — headers absent → 400
+  - `filterDisabled_missingHeaderStillPasses` — `enabled=false` → 200
+  - `missingHeader_400Body_containsMissingArray` — only the absent header listed
+  - `missingHeader_400Body_hasErrorField` — body has `error` and `status` fields
+  - `allHeadersMissing_400Body_listsAllInMissingArray` — all missing headers enumerated
+
+---
+
 ## [0.18.0] – 2026-08-24 — Phase 18: Maintenance Mode
 
 ### Added
