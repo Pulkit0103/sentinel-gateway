@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.39.0] – 2026-08-24 — Phase 39: Gateway Health Score
+
+### Added
+- **`HealthScoreResult`** (Java record): `score (0-100), grade (A/B/C/D/F), factors (Map<String,Integer>)`
+- **`HealthScoreService`** (`@Service`):
+  - Computes composite score from 3 equally-weighted factors:
+    - `errorRate`: 100 − clamp(overallErrorRatePct × 5, 0, 100) — penalises 4xx/5xx traffic
+    - `slowRequests`: 100 − clamp(slowRequestCount × 2, 0, 100) — penalises slow request build-up
+    - `uptime`: 100 if uptimeSec ≥ 60, else proportional — penalises recent restarts
+  - Grades: A ≥ 90, B ≥ 75, C ≥ 60, D ≥ 40, F < 40
+  - Aggregates from `ErrorRateRegistry`, `SlowRequestRegistry`, `UptimeRegistry`
+- **`HealthScoreController`** (`@RestController`, `/admin/health-score`):
+  - `GET /admin/health-score` — returns `{score, grade, factors}`, requires `ROLE_ADMIN`
+
+### Tests added
+- **`HealthScoreServiceTest`** (6 unit tests):
+  - no signals → high score, high error rate → reduces score, zero errors → factor 100
+  - 50 slow requests → slow factor 0, grade boundary mapping, factors map contains all keys
+- **`HealthScoreControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, score in 0-100 range, factors contain required keys, user role returns 403
+
+---
+
 ## [0.38.0] – 2026-08-24 — Phase 38: Response Latency Percentiles
 
 ### Added
