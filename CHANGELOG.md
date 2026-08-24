@@ -6,6 +6,58 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.12.0] – 2026-08-24 — Phase 12: Webhook Event Emission
+
+### Added
+- **`WebhookProperties`** (`@Component`, `@ConfigurationProperties("sentinel.webhook")`):
+  - `enabled: boolean` (default `false`) — master switch for webhook delivery
+  - `endpoints: List<WebhookEndpoint>` — list of target URLs with per-endpoint `secret` and
+    `events` filter (empty list = accept all event types)
+  - `timeoutSeconds: int` (default `5`) — HTTP request timeout per POST
+  - `retryAttempts: int` (default `2`) — retry count on transient failure
+- **`WebhookEvent`** (Java record): `eventType`, `requestId`, `clientIp`, `path`, `routeId`,
+  `timestamp`, `metadata` — immutable carrier for all emitted gateway events
+- **`WebhookService`** (interface): `Mono<Void> emit(WebhookEvent)` — fire-and-forget contract
+- **`NoOpWebhookService`**: implements `WebhookService`; `emit()` returns `Mono.empty()` immediately
+- **`WebhookServiceImpl`**: real implementation
+  - Filters endpoints by their `events` list before delivery
+  - Serializes event to JSON via Jackson `ObjectMapper`
+  - Signs JSON body with HMAC-SHA256 using the endpoint secret → `X-Webhook-Signature: sha256={hex}`
+  - POSTs to endpoint URL via `WebClient` with `Content-Type: application/json`
+  - Retries up to `retryAttempts` times on failure using `.retry()`
+  - Delivery runs on `Schedulers.boundedElastic()` — never blocks the gateway request pipeline
+- **`WebhookConfig`** (`@Configuration`):
+  - `@Bean WebClient webhookWebClient(WebhookProperties)` — dedicated client with response timeout
+  - `@Bean @ConditionalOnProperty(havingValue = "true") WebhookService webhookService(...)` — real impl
+  - `@Bean @ConditionalOnMissingBean WebhookService noOpWebhookService()` — fallback no-op
+- **`IpFilterGlobalFilter`** — emits `ROUTE_BLOCKED` event (fire-and-forget) when a request is
+  rejected by the IP allowlist/denylist check; includes `requestId`, `clientIp`, `path`, `routeId`
+- **`JwtRevocationFilter`** — emits `TOKEN_REVOKED` event (fire-and-forget) when a revoked JTI is
+  detected; includes `requestId`, `clientIp`, `path`, and `jti` in metadata
+- `sentinel.webhook.enabled: false` added to both `application.yml` (main) and `application.yml`
+  (test) — webhooks are absent in all existing integration tests and Redis-free environments
+
+### Tests added
+- **`WebhookServiceTest`** (5 unit tests, `@ExtendWith(MockitoExtension.class)`):
+  - `disabled_emitReturnsEmpty` — `NoOpWebhookService.emit()` completes empty
+  - `enabled_noMatchingEvents_skips` — endpoint `events` filtering verified; NoOp also completes empty
+  - `hmacSignature_isCorrect` — expected HMAC-SHA256 signature compared against `sign()` output
+  - `webhookProperties_defaultsAreCorrect` — verifies all property defaults
+  - `webhookEndpoint_defaultsAreCorrect` — verifies endpoint inner-class defaults
+- **`WebhookIntegrationTest`** (1 integration test, `@SpringBootTest`):
+  - `contextLoads` — full application context starts with `@MockBean WebhookService`; confirms wiring
+
+### Design notes
+- Fire-and-forget is achieved by calling `.subscribe()` on the `Mono` returned by `emit()` inside
+  the filter; the filter's reactive chain is never blocked waiting for webhook delivery
+- HMAC signing uses `javax.crypto.Mac` with `HmacSHA256`; `HexFormat.of().formatHex()` (JDK 17)
+  produces the lowercase hex digest prefixed with `sha256=`
+- `@ConditionalOnProperty(havingValue = "true")` / `@ConditionalOnMissingBean` pattern mirrors the
+  existing `TokenRevocationConfig` — no bean is registered when webhooks are disabled
+- Total test suite: 208 tests, 0 failures, 0 errors
+
+---
+
 ## [0.11.0] – 2026-08-24 — Phase 11: Per-Route Response Caching
 
 ### Added

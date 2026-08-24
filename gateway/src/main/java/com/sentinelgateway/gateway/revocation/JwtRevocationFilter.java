@@ -2,6 +2,8 @@ package com.sentinelgateway.gateway.revocation;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
+import com.sentinelgateway.gateway.webhook.WebhookEvent;
+import com.sentinelgateway.gateway.webhook.WebhookService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -15,6 +17,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * GlobalFilter that checks incoming JWTs against the Redis revocation blocklist.
@@ -45,9 +51,12 @@ public class JwtRevocationFilter implements GlobalFilter, Ordered {
     private static final Logger log = LoggerFactory.getLogger(JwtRevocationFilter.class);
 
     private final TokenRevocationService tokenRevocationService;
+    private final WebhookService webhookService;
 
-    public JwtRevocationFilter(TokenRevocationService tokenRevocationService) {
+    public JwtRevocationFilter(TokenRevocationService tokenRevocationService,
+                                WebhookService webhookService) {
         this.tokenRevocationService = tokenRevocationService;
+        this.webhookService = webhookService;
     }
 
     @Override
@@ -74,6 +83,17 @@ public class JwtRevocationFilter implements GlobalFilter, Ordered {
                                 if (revoked) {
                                     log.warn("Rejected revoked token JTI={} for path={}",
                                             jti, exchange.getRequest().getPath());
+                                    // Fire-and-forget webhook emission
+                                    String requestId = UUID.randomUUID().toString();
+                                    String clientIp = resolveClientIp(exchange);
+                                    String path = exchange.getRequest().getPath().value();
+                                    WebhookEvent event = new WebhookEvent(
+                                            "TOKEN_REVOKED", requestId, clientIp, path, null,
+                                            Instant.now(), Map.of("jti", jti));
+                                    webhookService.emit(event).subscribe(
+                                            null,
+                                            err -> log.warn("Webhook emit failed: {}", err.getMessage())
+                                    );
                                     return Mono.<ServerWebExchange>error(new ResponseStatusException(
                                             HttpStatus.UNAUTHORIZED, "Token has been revoked"));
                                 }
@@ -82,6 +102,15 @@ public class JwtRevocationFilter implements GlobalFilter, Ordered {
                 })
                 .defaultIfEmpty(exchange)
                 .flatMap(chain::filter);
+    }
+
+    private String resolveClientIp(ServerWebExchange exchange) {
+        String xff = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
+        }
+        var addr = exchange.getRequest().getRemoteAddress();
+        return addr != null ? addr.getAddress().getHostAddress() : "unknown";
     }
 
     private String extractJti(String tokenValue) {

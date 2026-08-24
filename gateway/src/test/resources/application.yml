@@ -28,6 +28,9 @@ sentinel:
   quota:
     enabled: false
 
+  webhook:
+    enabled: false
+
   rate-limit:
     enabled: false
     policies:

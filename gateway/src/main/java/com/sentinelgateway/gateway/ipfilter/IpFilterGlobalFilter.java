@@ -1,6 +1,8 @@
 package com.sentinelgateway.gateway.ipfilter;
 
 import com.sentinelgateway.gateway.routing.RouteRepository;
+import com.sentinelgateway.gateway.webhook.WebhookEvent;
+import com.sentinelgateway.gateway.webhook.WebhookService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -12,6 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * GlobalFilter that enforces per-route IP allowlists and denylists.
@@ -43,13 +49,16 @@ public class IpFilterGlobalFilter implements GlobalFilter, Ordered {
     private final IpFilterService ipFilterService;
     private final IpFilterProperties ipFilterProperties;
     private final RouteRepository routeRepository;
+    private final WebhookService webhookService;
 
     public IpFilterGlobalFilter(IpFilterService ipFilterService,
                                 IpFilterProperties ipFilterProperties,
-                                RouteRepository routeRepository) {
+                                RouteRepository routeRepository,
+                                WebhookService webhookService) {
         this.ipFilterService = ipFilterService;
         this.ipFilterProperties = ipFilterProperties;
         this.routeRepository = routeRepository;
+        this.webhookService = webhookService;
     }
 
     @Override
@@ -76,6 +85,16 @@ public class IpFilterGlobalFilter implements GlobalFilter, Ordered {
                     if (!allowed) {
                         log.warn("IP {} blocked on route {} (allowed={}, blocked={})",
                                 clientIp, routeId, entity.getAllowedIps(), entity.getBlockedIps());
+                        // Fire-and-forget webhook emission — does not block the response
+                        String requestId = UUID.randomUUID().toString();
+                        String path = exchange.getRequest().getPath().value();
+                        WebhookEvent event = new WebhookEvent(
+                                "ROUTE_BLOCKED", requestId, clientIp, path, routeId,
+                                Instant.now(), Map.of());
+                        webhookService.emit(event).subscribe(
+                                null,
+                                err -> log.warn("Webhook emit failed: {}", err.getMessage())
+                        );
                         exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                         return exchange.getResponse().setComplete().thenReturn(false);
                     }
