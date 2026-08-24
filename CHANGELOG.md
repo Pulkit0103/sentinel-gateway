@@ -6,6 +6,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.51.0] – 2026-08-24 — Phase 51: Response Header Audit
+
+### Added
+- **`HeaderAuditProperties`** (`@ConfigurationProperties(prefix="sentinel.header-audit")`):
+  - `enabled` (default `true`), `trackedHeaders` (default list of 6 security/cache headers)
+- **`HeaderAuditRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong[]>` per-header `{present, absent}` pair-counters + `AtomicLong totalResponses`
+  - `record(header, present)`, `incrementResponses()`, `snapshot()` → `{totalResponses, coveragePercent, headers}`, `reset()`
+  - `coveragePercent` = `100 × totalPresent / (totalPresent + totalAbsent)` rounded to 1 decimal place
+- **`HeaderAuditFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 12`):
+  - Uses `beforeCommit` to inspect response headers just before flush
+  - Iterates all configured `trackedHeaders` and records presence/absence for each
+  - Skips `/actuator/**` and `/admin/**` to prevent self-recording
+- **`HeaderAuditController`** (`@RestController`, `/admin/header-audit`):
+  - `GET /admin/header-audit` — `{enabled, trackedHeaders, totalResponses, coveragePercent, headers}`, requires `ROLE_ADMIN`
+  - `POST /admin/header-audit/reset` — clears all counters
+
+### Tests added
+- **`HeaderAuditControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded present/absent counts appear correctly, coverage percentage computed correctly (75% for 3-present/1-absent)
+  - reset clears counters, user role returns 403
+
+---
+
 ## [0.50.0] – 2026-08-24 — Phase 50: Request Clock-Skew Detector
 
 ### Added

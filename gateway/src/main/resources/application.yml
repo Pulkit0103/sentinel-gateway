@@ -154,6 +154,16 @@ sentinel:
     tolerance-seconds: 300          # flag requests whose timestamp deviates by more than this
     max-records: 100                # ring-buffer capacity for skewed-request history
 
+  header-audit:
+    enabled: true   # audit presence/absence of security and cache-control headers on responses
+    tracked-headers:
+      - Content-Security-Policy
+      - X-Content-Type-Options
+      - X-Frame-Options
+      - Strict-Transport-Security
+      - Cache-Control
+      - Referrer-Policy
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

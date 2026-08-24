@@ -28,6 +28,16 @@ sentinel:
     tolerance-seconds: 300
     max-records: 100
 
+  header-audit:
+    enabled: true
+    tracked-headers:
+      - Content-Security-Policy
+      - X-Content-Type-Options
+      - X-Frame-Options
+      - Strict-Transport-Security
+      - Cache-Control
+      - Referrer-Policy
+
   method-stats:
     enabled: true
 
