@@ -1,4 +1,7 @@
 sentinel:
+  ip-access:
+    enabled: false
+
   claim-authorization:
     enabled: false
 

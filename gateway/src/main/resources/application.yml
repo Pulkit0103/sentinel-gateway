@@ -119,6 +119,15 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  ip-access:
+    enabled: false  # set to true to enable IP-based access control
+    mode: DENYLIST  # DENYLIST (block listed IPs) or ALLOWLIST (only allow listed IPs)
+    # global-list:
+    #   - "10.0.0.1"
+    # routes:
+    #   payment-service:
+    #     - "192.168.1.100"
+
   claim-authorization:
     enabled: false  # set to true and configure routes map to enforce JWT claim values per route
     # routes:

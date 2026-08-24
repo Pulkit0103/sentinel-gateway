@@ -6,6 +6,39 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.28.0] – 2026-08-24 — Phase 28: IP-Based Access Control
+
+### Added
+- **`IpAccessProperties`** (`@Component`, `@ConfigurationProperties("sentinel.ip-access")`):
+  - `enabled: boolean` (default `false`)
+  - `mode: Mode` — `ALLOWLIST` (only listed IPs pass) or `DENYLIST` (listed IPs blocked), default `DENYLIST`
+  - `globalList: List<String>` — IP addresses subject to the access rule
+  - `routes: Map<String, List<String>>` — per-route IP list overrides (for future path-based extension)
+  - `effectiveListForRoute(routeId)` helper returns route-specific list or falls back to globalList
+- **`IpAccessFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 2`):
+  - Applies globally to all requests (admin endpoints + proxied routes)
+  - Client IP extracted from `X-Forwarded-For` header (first entry) or remote address
+  - ALLOWLIST mode: IP not in globalList → 403 JSON `{"status":403,"error":"IP access denied","ip":"...","mode":"ALLOWLIST"}`
+  - DENYLIST mode: IP in globalList → 403 JSON
+  - Disabled by default; toggled at runtime via `setEnabled()`
+- **`IpAccessController`** (`@RestController`, `/admin/ip-access`):
+  - `GET /admin/ip-access` — returns `{enabled, mode, globalList, routes}`, requires `ROLE_ADMIN`
+- **`application.yml`** (main and test): `sentinel.ip-access.enabled: false` block added
+
+### Tests added
+- **`IpAccessPropertiesTest`** (7 unit tests):
+  - Default values, effectiveListForRoute with/without route override, mode setter
+- **`IpAccessFilterTest`** (7 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `filterDisabled_requestPasses` — disabled filter lets all through
+  - `denylist_ipInList_returns403` — blocked IP via X-Forwarded-For gets 403
+  - `denylist_ipNotInList_passes` — non-listed IP passes denylist
+  - `allowlist_ipInList_passes` — listed IP passes allowlist
+  - `allowlist_ipNotInList_returns403` — non-listed IP blocked in allowlist mode
+  - `xForwardedFor_firstEntryUsed` — first entry of multi-hop XFF header used as client IP
+  - `getConfig_admin_returnsExpectedFields` — admin endpoint returns all config fields
+
+---
+
 ## [0.27.0] – 2026-08-24 — Phase 27: Active Session Tracking
 
 ### Added
