@@ -34,23 +34,38 @@ Client → TLS → Auth → AuthZ → Tenant → Policy → Threat → RateLimit
 
 ## Project Status
 
-### Phase 2 — Active (v0.2.0-SNAPSHOT)
+### Production Hardening — Complete (v0.4.0-SNAPSHOT)
 
-**Dynamic Admin CRUD + Route Persistence** — routes and policies are now fully
-manageable at runtime via REST API with no gateway restart required.
+**66 phases complete** — all production-hardening observability, traffic analysis, and security enforcement filters are implemented, tested, and merged to `main`.
 
-| Feature | Status |
-|---------|--------|
-| Route CRUD (create/update/delete/enable/disable) | ✅ v0.2.0 |
-| Route persistence (PostgreSQL via R2DBC) | ✅ v0.2.0 |
-| Policy CRUD (create/update/delete) | ✅ v0.2.0 |
-| IP Blocklist management API | ✅ v0.2.0 |
-| Hot-reload via `RefreshRoutesEvent` | ✅ v0.2.0 |
+| Category | Phases | Status |
+|----------|--------|--------|
+| Core Security Pipeline (JWT/OIDC, RBAC, Rate Limiting, Threat Detection) | 1–25 | ✅ Complete |
+| Dynamic Admin CRUD + Route Persistence | 26–30 | ✅ Complete |
+| Advanced Analytics — Slow Requests, Clock Skew, Error Paths, Cache TTL | 31–50 | ✅ Complete |
+| Traffic Analysis — Method Stats, Hop Count, Path Length, Response Size, Concurrency, Status Codes | 51–59 | ✅ Complete |
+| Extended Analytics — Query Params, Scheme, Path Depth, Referer, Route Error Rate, Throughput | 60–66 | ✅ Complete |
 
-### Phase 1 — Complete (v0.1.0)
+### Feature Highlights (v0.4.x)
+
+| Feature | Admin Endpoint |
+|---------|---------------|
+| Request throughput (RPS) sliding windows (1s/10s/60s) + peak | `GET /admin/throughput-stats` |
+| Per-route error rate (1-min/5-min/15-min windows) | `GET /admin/route-error-rate` |
+| Referer domain distribution (top-N) | `GET /admin/referer-stats` |
+| URL path-depth distribution | `GET /admin/path-depth-stats` |
+| URI scheme distribution (HTTP vs HTTPS) | `GET /admin/scheme-stats` |
+| Query parameter count distribution | `GET /admin/query-param-stats` |
+| Response size distribution + sample ring-buffer | `GET /admin/response-size-stats` |
+| In-flight concurrency tracking + peak | `GET /admin/concurrent-request-stats` |
+| HTTP status code distribution (per-code + 2xx/3xx/4xx/5xx) | `GET /admin/status-code-stats` |
+| Per-route latency percentiles (p50/p95/p99) | `GET /admin/latency-stats` |
+| Live dashboard (all metrics in one response) | `GET /admin/dashboard` |
+
+> **Note:** Threat detection is demonstrable WAF-style detection — not a replacement for a commercial WAF product.
+
+### Older Phases — Complete
 
 All **25 original development phases** are complete, providing a production-grade
 zero-trust gateway with JWT/OIDC auth, RBAC, rate limiting, threat detection,
 audit logging, resilience, and full CI/CD pipeline.
-
-> **Note:** Threat detection is demonstrable WAF-style detection — not a replacement for a commercial WAF product.
