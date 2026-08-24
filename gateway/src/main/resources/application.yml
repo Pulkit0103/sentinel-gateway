@@ -144,6 +144,10 @@ sentinel:
   user-agent-stats:
     enabled: true   # track request User-Agent category distribution (browser, mobile, bot, service)
 
+  ip-counter:
+    enabled: true   # track per-IP request counts and expose top-N "top talkers" list
+    top-n: 20       # number of top IPs returned in /admin/ip-stats
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

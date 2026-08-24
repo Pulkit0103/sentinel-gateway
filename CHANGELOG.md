@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.49.0] – 2026-08-24 — Phase 49: Top-N IP Address Tracker
+
+### Added
+- **`IpCounterProperties`** (`@ConfigurationProperties(prefix="sentinel.ip-counter")`):
+  - `enabled` (default `true`), `topN` (default `20`)
+- **`IpCounterRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` per-IP counters + `AtomicLong total`
+  - `record(ip)`, `snapshot(topN)` → `{total, uniqueIps, topIps}` sorted by count descending, `reset()`
+  - `getTotal()` and `getUniqueIpCount()` helpers for tests
+- **`IpCounterFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 10`):
+  - Extracts client IP: prefers first hop in `X-Forwarded-For` (real client IP behind proxy), falls back to remote address
+  - Skips `/actuator/**` and `/admin/**` to prevent self-recording
+- **`IpCounterController`** (`@RestController`, `/admin/ip-stats`):
+  - `GET /admin/ip-stats` — `{enabled, topN, total, uniqueIps, topIps}`, requires `ROLE_ADMIN`
+  - `POST /admin/ip-stats/reset` — clears all counters
+
+### Tests added
+- **`IpCounterControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded IPs appear sorted by count descending, reset clears counters
+  - user role returns 403, `extractClientIp()` unit test verifying XFF first-hop extraction
+
+---
+
 ## [0.48.0] – 2026-08-24 — Phase 48: Request User-Agent Distribution
 
 ### Added

@@ -18,6 +18,10 @@ sentinel:
   user-agent-stats:
     enabled: true
 
+  ip-counter:
+    enabled: true
+    top-n: 20
+
   method-stats:
     enabled: true
 
