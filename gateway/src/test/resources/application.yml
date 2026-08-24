@@ -60,6 +60,9 @@ sentinel:
   response-header-size:
     enabled: true
 
+  query-param-count:
+    enabled: true
+
   method-stats:
     enabled: true
 

@@ -186,6 +186,9 @@ sentinel:
   response-header-size:
     enabled: true   # track response header total-size distribution (small/medium/large/oversized)
 
+  query-param-count:
+    enabled: true   # track request query-parameter count distribution (zero/few/moderate/many)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

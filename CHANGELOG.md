@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.60.0] – 2026-08-24 — Phase 60: Query Parameter Count Distribution
+
+### Added
+- **`QueryParamProperties`** (`@ConfigurationProperties(prefix="sentinel.query-param-count")`):
+  - `enabled` (default `true`)
+- **`QueryParamRegistry`** (`@Component`):
+  - Fixed buckets: `zero` (0 params), `few` (1-3), `moderate` (4-8), `many` (9+)
+  - `AtomicLong maxSeen` — CAS spin-loop tracks the highest param count ever seen
+  - `record(count)`, `snapshot()` → `{total, maxSeen, buckets}` with all four keys always present, `reset()`
+- **`QueryParamFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 20`):
+  - Reads `exchange.getRequest().getQueryParams().size()` at filter entry
+  - Skips `/actuator/**` and `/admin/**`
+- **`QueryParamController`** (`@RestController`, `/admin/query-param-stats`):
+  - `GET /admin/query-param-stats` — `{enabled, total, maxSeen, buckets}`, requires `ROLE_ADMIN`
+  - `POST /admin/query-param-stats/reset` — clears all counters and maxSeen
+
+### Tests added
+- **`QueryParamControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 5 seeded counts bucketed correctly + maxSeen=12 tracked, reset clears counters+max
+  - user role returns 403, `classify()` boundary conditions verified (0→zero, 1-3→few, 4-8→moderate, 9+→many)
+
+---
+
 ## [0.59.0] – 2026-08-24 — Phase 59: Response Header Size Distribution
 
 ### Added
