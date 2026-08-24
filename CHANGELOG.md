@@ -6,6 +6,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.23.0] – 2026-08-24 — Phase 23: Active Request Metrics
+
+### Added
+- **`RequestMetricsRegistry`** (`@Component`):
+  - `inflightRequests` (gauge) — `AtomicLong` incremented on request start, decremented on completion
+  - `totalCompleted` (monotonic counter) — counts all completed gateway requests
+  - `perRouteCompleted` (ConcurrentHashMap per routeId) — per-route completed request counts
+  - `requestStarted()`, `requestCompleted(routeId)`, `reset()` operations
+  - All counters are ephemeral (lost on restart); for durable metrics use Prometheus
+- **`RequestMetricsFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE`):
+  - Wraps all requests to track inflight and completed counts
+  - Resolves route ID from `GATEWAY_ROUTE_ATTR` after chain completes
+  - Skips `/admin/**` and `/actuator/**` paths — only counts actual gateway traffic
+- **`RequestMetricsController`** (`@RestController`, `/admin/request-metrics`):
+  - `GET  /admin/request-metrics` — returns `{inflightRequests, totalCompleted, perRouteCompleted}`
+  - `POST /admin/request-metrics/reset` — zeroes all counters (useful for baselining)
+  - All endpoints require `ROLE_ADMIN`
+
+### Tests added
+- **`RequestMetricsRegistryTest`** (8 unit tests): verifies counter semantics (increment, decrement, reset, null routeId)
+- **`RequestMetricsControllerTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getMetrics_admin_returns200WithExpectedFields` — GET returns all expected keys
+  - `afterRequest_totalCompletedIncreases` — sending a request increments totalCompleted
+  - `reset_admin_clearsCounters` — POST reset → counters zeroed
+  - `getMetrics_userRole_returns403` — USER role → 403
+  - `reset_userRole_returns403` — USER role → 403
+
+---
+
 ## [0.22.0] – 2026-08-24 — Phase 22: JWT Audience Validation
 
 ### Added
