@@ -1,10 +1,7 @@
 package com.sentinelgateway.gateway.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-
-import java.util.List;
 
 /**
  * Gateway routing configuration.
