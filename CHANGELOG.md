@@ -6,6 +6,40 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.27.0] – 2026-08-24 — Phase 27: Active Session Tracking
+
+### Added
+- **`ActiveSessionRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, Instant>` — maps JWT subject → last-seen timestamp
+  - `recordActivity(String subject)` — updates timestamp; null/blank subjects ignored
+  - `activeSince(Instant since)` — returns subjects seen at or after `since` (sliding window)
+  - `totalTracked()` — total subjects in registry
+  - `evictBefore(Instant cutoff)` — removes entries last seen before cutoff
+  - `clear()` — wipes entire registry
+- **`SessionTrackingFilter`** (`GlobalFilter`, order `LOWEST_PRECEDENCE - 1`):
+  - Runs after chain completes; reads security context via `ReactiveSecurityContextHolder`
+  - Records JWT `sub` claim via `JwtAuthenticationToken` instanceof check
+  - Non-JWT (API key, unauthenticated) requests are silently skipped
+- **`SessionController`** (`@RestController`, `/admin/sessions`):
+  - `GET /admin/sessions?windowSeconds=300` — returns `{windowSeconds, activeSessions, subjects, totalTracked}`
+  - `POST /admin/sessions/evict?olderThanSeconds=3600` — evicts stale entries, returns `{evicted, remaining}`
+  - Both endpoints require `ROLE_ADMIN`
+
+### Tests added
+- **`ActiveSessionRegistryTest`** (10 unit tests):
+  - `freshRegistry_isEmpty`, `recordActivity_tracksSubject`, null/blank subject ignored
+  - `activeSince_recentActivity_returnsSubject`, `activeSince_futureInstant_returnsEmpty`
+  - `evictBefore_removesOldEntries`, `evictBefore_keepsRecentEntries`
+  - `clear_removesAll`, `multipleSubjects_trackedIndependently`
+- **`SessionControllerTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getActiveSessions_admin_returns200WithExpectedFields`
+  - `getActiveSessions_customWindow_reflected`
+  - `seededSubject_appearsInActiveSessions`
+  - `evict_admin_returnsEvictedCount`
+  - `getActiveSessions_userRole_returns403`
+
+---
+
 ## [0.26.0] – 2026-08-24 — Phase 26: JWT Claim-Based Route Authorization
 
 ### Added
