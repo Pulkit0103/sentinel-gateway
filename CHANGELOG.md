@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.56.0] – 2026-08-24 — Phase 56: Error-Path Ring-Buffer
+
+### Added
+- **`ErrorPathProperties`** (`@ConfigurationProperties(prefix="sentinel.error-path")`):
+  - `enabled` (default `true`), `maxRecords` (default `200`)
+- **`ErrorPathRecord`** (record): `timestamp`, `method`, `path`, `statusCode`
+- **`ErrorPathRegistry`** (`@Component`):
+  - `LinkedBlockingDeque<ErrorPathRecord>` ring-buffer + `AtomicLong total4xx/total5xx`
+  - `record(rec)` — increments appropriate counter and appends to ring-buffer
+  - `snapshot()` → `{total4xx, total5xx, recentErrors}` in reverse-chronological order, `reset()`
+  - `getTotal4xx()`, `getTotal5xx()`, `getRecordedCount()` helpers
+- **`ErrorPathFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 16`):
+  - Uses `beforeCommit` to check response status code; only records responses with status ≥ 400
+  - Skips `/actuator/**`; includes `/admin/**` to surface admin request errors
+- **`ErrorPathController`** (`@RestController`, `/admin/error-paths`):
+  - `GET /admin/error-paths` — `{enabled, maxRecords, total4xx, total5xx, recentErrors}`, requires `ROLE_ADMIN`
+  - `POST /admin/error-paths/reset` — clears ring-buffer and counters
+
+### Tests added
+- **`ErrorPathControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded 4xx/5xx appear with correct bucket counts, reset clears all
+  - user role returns 403, 4xx/5xx counter separation verified
+
+---
+
 ## [0.55.0] – 2026-08-24 — Phase 55: Extended Live Operations Dashboard
 
 ### Changed

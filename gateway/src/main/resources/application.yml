@@ -173,6 +173,10 @@ sentinel:
   encoding-stats:
     enabled: true   # track request Content-Encoding distribution (gzip, br, deflate, none)
 
+  error-path:
+    enabled: true   # record recent 4xx/5xx error responses with path and status for triage
+    max-records: 200  # ring-buffer capacity for error history
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

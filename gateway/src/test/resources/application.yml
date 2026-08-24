@@ -47,6 +47,10 @@ sentinel:
   encoding-stats:
     enabled: true
 
+  error-path:
+    enabled: true
+    max-records: 200
+
   method-stats:
     enabled: true
 
