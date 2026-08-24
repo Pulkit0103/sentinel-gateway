@@ -119,6 +119,15 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  security-headers:
+    enabled: true   # adds OWASP recommended security headers to every response
+    # headers:
+    #   X-Content-Type-Options: nosniff          # default
+    #   X-Frame-Options: DENY                    # default
+    #   Referrer-Policy: strict-origin-when-cross-origin  # default
+    #   X-XSS-Protection: "0"                   # default
+    #   Permissions-Policy: "geolocation=()"    # optional addition
+
   ip-access:
     enabled: false  # set to true to enable IP-based access control
     mode: DENYLIST  # DENYLIST (block listed IPs) or ALLOWLIST (only allow listed IPs)

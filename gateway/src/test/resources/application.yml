@@ -1,4 +1,7 @@
 sentinel:
+  security-headers:
+    enabled: true
+
   ip-access:
     enabled: false
 

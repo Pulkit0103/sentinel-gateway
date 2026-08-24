@@ -6,6 +6,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.29.0] – 2026-08-24 — Phase 29: Response Security Headers
+
+### Added
+- **`SecurityHeadersProperties`** (`@Component`, `@ConfigurationProperties("sentinel.security-headers")`):
+  - `enabled: boolean` (default `true`)
+  - `headers: Map<String, String>` — default OWASP headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-XSS-Protection: 0`, `Permissions-Policy: interest-cohort=()`
+  - `effectiveHeaders()` — merges configured map, drops blank-value entries (caller opts out of that header)
+- **`SecurityHeadersFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE`):
+  - Registers a `beforeCommit` hook so headers are applied immediately before the response is flushed
+  - Force-sets all effective headers using `HttpHeaders.set()`, overriding Spring Security defaults (e.g., `Referrer-Policy: no-referrer` → `strict-origin-when-cross-origin`)
+  - Disabled by setting `sentinel.security-headers.enabled: false`
+- **`SecurityHeadersController`** (`@RestController`, `/admin/security-headers`):
+  - `GET /admin/security-headers` — returns `{enabled, headers}` showing active config, requires `ROLE_ADMIN`
+- **`application.yml`** (main and test): `sentinel.security-headers.enabled: true` block added
+
+### Tests added
+- **`SecurityHeadersPropertiesTest`** (6 unit tests):
+  - Default 5 headers present, xContentTypeOptions default, referrerPolicy default, custom header, blank removal, toggle enabled
+- **`SecurityHeadersFilterTest`** (6 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `defaultHeaders_referrerPolicyOverridesSpringSecurityValue` — `Referrer-Policy: strict-origin-when-cross-origin` overrides Spring Security's `no-referrer`
+  - `defaultHeaders_permissionsPolicyPresent` — `Permissions-Policy: interest-cohort=()` added (Spring Security doesn't set this)
+  - `filterDisabled_permissionsPolicyAbsent` — disabled filter doesn't add `Permissions-Policy`
+  - `customHeader_appearsInResponse` — extra header appears in response
+  - `blankValueOverride_permissionsPolicyRemoved` — blank-value config entry removes that header
+  - `getConfig_admin_returnsExpectedFields` — admin endpoint returns correct JSON
+
+---
+
 ## [0.28.0] – 2026-08-24 — Phase 28: IP-Based Access Control
 
 ### Added
