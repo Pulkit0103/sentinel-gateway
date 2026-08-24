@@ -183,6 +183,9 @@ sentinel:
   header-count:
     enabled: true   # track request header count distribution (low/normal/elevated/high buckets)
 
+  response-header-size:
+    enabled: true   # track response header total-size distribution (small/medium/large/oversized)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

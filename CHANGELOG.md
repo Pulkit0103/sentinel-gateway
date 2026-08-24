@@ -6,6 +6,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.59.0] – 2026-08-24 — Phase 59: Response Header Size Distribution
+
+### Added
+- **`ResponseHeaderSizeProperties`** (`@ConfigurationProperties(prefix="sentinel.response-header-size")`):
+  - `enabled` (default `true`)
+- **`ResponseHeaderSizeRegistry`** (`@Component`):
+  - Fixed buckets: `small` (0-512 bytes), `medium` (513-2048), `large` (2049-8192), `oversized` (>8192)
+  - `AtomicLong maxSeen` — CAS spin-loop tracks the largest header size ever seen
+  - `measureHeaders(HttpHeaders)` — sums `name + ": " + value + "\r\n"` lengths for all response headers
+  - `record(sizeBytes)`, `snapshot()` → `{total, maxSeenBytes, buckets}` with all four keys always present, `reset()`
+- **`ResponseHeaderSizeFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 19`):
+  - Uses `beforeCommit` to measure response headers just before flush
+  - Skips `/actuator/**` and `/admin/**`
+- **`ResponseHeaderSizeController`** (`@RestController`, `/admin/response-header-size-stats`):
+  - `GET /admin/response-header-size-stats` — `{enabled, total, maxSeenBytes, buckets}`, requires `ROLE_ADMIN`
+  - `POST /admin/response-header-size-stats/reset` — clears all counters and maxSeen
+
+### Tests added
+- **`ResponseHeaderSizeControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 5 seeded sizes bucketed correctly + maxSeen=10000 tracked, reset clears counters+max
+  - user role returns 403, `classify()` boundary conditions verified (0/512→small, 513/2048→medium, 2049/8192→large, 8193+→oversized)
+
+---
+
 ## [0.58.0] – 2026-08-24 — Phase 58: Request Header Count Distribution
 
 ### Added

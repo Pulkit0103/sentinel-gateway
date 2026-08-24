@@ -57,6 +57,9 @@ sentinel:
   header-count:
     enabled: true
 
+  response-header-size:
+    enabled: true
+
   method-stats:
     enabled: true
 
