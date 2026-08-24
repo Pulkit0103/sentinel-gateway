@@ -6,6 +6,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.30.0] – 2026-08-24 — Phase 30: Gateway Uptime Tracking
+
+### Added
+- **`UptimeRegistry`** (`@Component`):
+  - `startTime: Instant` — captured at bean construction (immutable)
+  - `requestCount: AtomicLong` — thread-safe counter incremented per non-admin/non-actuator request
+  - `recordRequest()`, `getRequestCount()`, `uptimeSeconds()`, `reset()` (counter only, not startTime)
+- **`UptimeFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 1`):
+  - Counts all inbound requests; skips `/admin/**` and `/actuator/**` to avoid inflating metrics
+- **`UptimeController`** (`@RestController`, `/admin/uptime`):
+  - `GET /admin/uptime` — returns `{startTime, uptimeSeconds, requestCount}`, requires `ROLE_ADMIN`
+  - `POST /admin/uptime/reset` — clears request counter, returns `{reset: true, requestCount: 0}`
+
+### Tests added
+- **`UptimeRegistryTest`** (7 unit tests):
+  - `freshRegistry_startTimeIsRecent`, `freshRegistry_requestCountIsZero`
+  - `recordRequest_incrementsCount`, `uptimeSeconds_isNonNegative`
+  - `reset_clearsRequestCount`, `reset_doesNotAffectStartTime`
+  - `concurrentRecordRequest_threadsafe` — 10 threads × 100 increments = 1000
+- **`UptimeControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getUptime_admin_returnsExpectedFields`
+  - `resetCounter_returnsZeroRequestCount`
+  - `seededRequests_appearsInRequestCount`
+  - `getUptime_userRole_returns403`
+
+---
+
 ## [0.29.0] – 2026-08-24 — Phase 29: Response Security Headers
 
 ### Added
