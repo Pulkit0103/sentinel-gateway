@@ -207,6 +207,10 @@ sentinel:
     #     requests-per-minute: 5000
     #   trial-tenant:
     #     requests-per-minute: 50
+  jwt:
+    claims-forwarding:
+      enabled: false  # set to true and add mappings to forward extra JWT claims as headers
+
   security:
     jwt:
       # Token issuer validated against every incoming JWT's `iss` claim.

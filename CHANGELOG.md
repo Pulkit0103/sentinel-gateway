@@ -6,6 +6,37 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.15.0] – 2026-08-24 — Phase 15: Configurable JWT Claims Forwarding + Scope Denial Audit Events
+
+### Added
+- **`JwtClaimsForwardingProperties`** (`@Component`, `@ConfigurationProperties("sentinel.jwt.claims-forwarding")`):
+  - `enabled: boolean` (default `false`) — opt-in master switch
+  - `mappings: List<ClaimMapping>` — each entry has `claim: String` (JWT claim name) and
+    `header: String` (HTTP header name to forward to upstream)
+  - Only string-valued claims are forwarded; non-string values (arrays, objects, numbers) are
+    silently skipped
+- **`JwtHeadersFilter`** enhanced: when `sentinel.jwt.claims-forwarding.enabled=true`, iterates
+  over `mappings` and appends each configured claim as an extra upstream header immediately after
+  the standard `X-User-Id` / `X-Tenant-Id` / `X-User-Roles` headers
+- **`RouteAuthorizationFilter`** enhanced: on scope-mismatch 403, emits a structured audit log
+  line via a dedicated `AUDIT_SECURITY` logger:
+  `requestId={} path={} routeId={} outcome=FORBIDDEN_SCOPE reason="Required scopes: {} not satisfied by: {}"`
+- `sentinel.jwt.claims-forwarding.enabled: false` added to `application.yml` (main and test)
+
+### Tests added
+- **`JwtClaimsForwardingTest`** (2 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `emailClaim_forwardedAsXUserEmailHeader` — JWT with `email` claim + mapping enabled →
+    upstream receives `X-User-Email: test@example.com`
+  - `standardHeadersStillPresent_whenClaimsForwardingEnabled` — verifies `X-User-Id` and
+    `X-User-Email` are both present when claims forwarding is active
+- **`JwtClaimsForwardingPropertiesTest`** (4 unit tests):
+  - `defaults_enabledIsFalse` — fresh instance has `enabled=false`
+  - `defaults_mappingsIsEmptyList` — fresh instance has non-null empty mappings list
+  - `setEnabled_updatesFlag` — mutator round-trip
+  - `setMappings_storesMappings` — stores claim/header mapping and reads back correctly
+
+---
+
 ## [0.14.0] – 2026-08-24 — Phase 14: Tenant-Scoped Rate Limiting + Policy Admin API
 
 ### Added

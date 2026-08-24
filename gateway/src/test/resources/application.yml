@@ -43,6 +43,10 @@ sentinel:
       DEFAULT:
         requests-per-minute: 1000
 
+  jwt:
+    claims-forwarding:
+      enabled: false
+
   security:
     jwt:
       issuer: http://localhost:8180/realms/sentinel
