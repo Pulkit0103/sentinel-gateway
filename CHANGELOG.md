@@ -6,6 +6,40 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.25.0] – 2026-08-24 — Phase 25: Response Time SLA Tracking
+
+### Added
+- **`SlaProperties`** (`@Component`, `@ConfigurationProperties("sentinel.sla")`):
+  - `enabled: boolean` (default `false`)
+  - `routes: Map<String, Long>` — maps routeId → target response time in milliseconds
+  - `hasSla(routeId)` / `targetMs(routeId)` helpers
+- **`SlaTracker`** (`@Component`):
+  - Per-route in-memory statistics: `totalRequests`, `breachCount`, `totalDurationMs`, `maxDurationMs`
+  - `record(routeId, durationMs, targetMs)` — increments counts, marks breach if duration > target
+  - `snapshots()` — returns `Map<routeId, SlaSnapshot>` with `meanDurationMs`, `maxDurationMs`,
+    `breachRatePct` (0–100)
+  - `reset()` — clears all stats
+- **`SlaTrackingFilter`** (`GlobalFilter`, order `LOWEST_PRECEDENCE`):
+  - Measures full round-trip duration (all filters + upstream)
+  - Skips routes without an SLA target; no-op when `enabled=false`
+  - Logs WARN on breach: `SLA breach on route {}: {}ms > {}ms target`
+- **`SlaController`** (`@RestController`, `/admin/sla`):
+  - `GET  /admin/sla` — returns `{enabled, configuredRoutes, statistics}`
+  - `POST /admin/sla/reset` — zeros all statistics
+  - All endpoints require `ROLE_ADMIN`
+- **`application.yml`** (main and test): `sentinel.sla.enabled: false` block added
+
+### Tests added
+- **`SlaTrackerTest`** (7 unit tests): verifies breach counting, mean/max computation, multi-route isolation
+- **`SlaControllerTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - `getSlaReport_admin_returns200WithExpectedFields` — GET returns all expected keys
+  - `afterRequest_slaStatisticsContainRoute` — sending a request populates statistics
+  - `resetSla_admin_clearsStatistics` — POST reset → statistics empty
+  - `getSlaReport_userRole_returns403` — USER role → 403
+  - `resetSla_userRole_returns403` — USER role → 403
+
+---
+
 ## [0.24.0] – 2026-08-24 — Phase 24: API Key Rotation
 
 ### Added

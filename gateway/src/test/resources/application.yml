@@ -1,4 +1,7 @@
 sentinel:
+  sla:
+    enabled: false
+
   required-headers:
     enabled: false
 

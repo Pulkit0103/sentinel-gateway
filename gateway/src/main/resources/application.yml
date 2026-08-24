@@ -119,6 +119,12 @@ info:
 # Future phases will move this to a database-backed RouteDefinitionRepository.
 # ─────────────────────────────────────────────────────────────────────────────
 sentinel:
+  sla:
+    enabled: false  # set to true and configure routes map to track response time SLAs
+    # routes:
+    #   payment-service: 500   # must respond within 500ms
+    #   order-service: 1000
+
   required-headers:
     enabled: false  # set to true and configure routes map to enforce required headers per route
     # routes:
