@@ -6,6 +6,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.50.0] – 2026-08-24 — Phase 50: Request Clock-Skew Detector
+
+### Added
+- **`ClockSkewProperties`** (`@ConfigurationProperties(prefix="sentinel.clock-skew")`):
+  - `enabled` (default `true`), `headerName` (default `X-Request-Timestamp`), `toleranceSeconds` (default `300`), `maxRecords` (default `100`)
+- **`SkewedRequestRecord`** (record): `detectedAt`, `method`, `path`, `clientTimestamp`, `skewSeconds`
+- **`ClockSkewRegistry`** (`@Component`):
+  - `AtomicLong totalChecked` and `totalSkewed`; `LinkedBlockingDeque` ring-buffer of recent flagged records
+  - `recordChecked()`, `recordSkewed(rec)`, `snapshot()` → `{totalChecked, totalSkewed, recentSkewed}`, `reset()`
+- **`ClockSkewFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 11`):
+  - Reads `X-Request-Timestamp` (configurable) from each request; parses as epoch-seconds
+  - Flags requests where `|serverTime - clientTime| > toleranceSeconds`; purely observational — does not block
+  - Silently ignores non-numeric timestamps; skips `/actuator/**` and `/admin/**`
+- **`ClockSkewController`** (`@RestController`, `/admin/clock-skew`):
+  - `GET /admin/clock-skew` — `{enabled, toleranceSeconds, headerName, totalChecked, totalSkewed, recentSkewed}`, requires `ROLE_ADMIN`
+  - `POST /admin/clock-skew/reset` — clears all counters and history
+
+### Tests added
+- **`ClockSkewControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded skewed record appears in snapshot, reset clears counters
+  - user role returns 403, within-tolerance records not counted as skewed
+
+---
+
 ## [0.49.0] – 2026-08-24 — Phase 49: Top-N IP Address Tracker
 
 ### Added

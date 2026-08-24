@@ -22,6 +22,12 @@ sentinel:
     enabled: true
     top-n: 20
 
+  clock-skew:
+    enabled: true
+    header-name: X-Request-Timestamp
+    tolerance-seconds: 300
+    max-records: 100
+
   method-stats:
     enabled: true
 

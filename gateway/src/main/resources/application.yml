@@ -148,6 +148,12 @@ sentinel:
     enabled: true   # track per-IP request counts and expose top-N "top talkers" list
     top-n: 20       # number of top IPs returned in /admin/ip-stats
 
+  clock-skew:
+    enabled: true                   # detect requests with X-Request-Timestamp far from server time
+    header-name: X-Request-Timestamp  # epoch-second timestamp header sent by clients
+    tolerance-seconds: 300          # flag requests whose timestamp deviates by more than this
+    max-records: 100                # ring-buffer capacity for skewed-request history
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 
