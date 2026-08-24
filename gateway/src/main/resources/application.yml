@@ -199,6 +199,9 @@ sentinel:
     enabled: true   # track Referer header domain distribution (top-N domains by request count)
     top-n: 20
 
+  route-error-rate:
+    enabled: true   # track per-route error (4xx/5xx) rates in 1-min/5-min/15-min sliding windows
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

@@ -73,6 +73,9 @@ sentinel:
     enabled: true
     top-n: 20
 
+  route-error-rate:
+    enabled: true
+
   method-stats:
     enabled: true
 

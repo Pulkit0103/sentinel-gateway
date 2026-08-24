@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.65.0] – 2026-08-24 — Phase 65: Per-Route Error Rate Sliding Windows
+
+### Added
+- **`RouteErrorRateProperties`** (`@ConfigurationProperties(prefix="sentinel.route-error-rate")`):
+  - `enabled` (default `true`)
+- **`RouteErrorRateRegistry`** (`@Component`):
+  - Two `ConcurrentHashMap<String, ConcurrentLinkedDeque<Long>>` per route — one for all requests, one for errors (4xx+5xx)
+  - `record(route, isError)` — appends current epoch-ms timestamp to appropriate deque(s)
+  - `snapshot()` — computes 1-min/5-min/15-min window counts at query time: `{total, errors, errorRatePct}` per window per route
+  - `reset()`, `routeCount()`
+- **`RouteErrorRateFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 24`):
+  - Uses `beforeCommit` to capture final HTTP status; records as error if status ≥ 400
+  - Route key = first 2 path segments (same bucketing as LatencyFilter)
+  - Skips `/actuator/**`
+- **`RouteErrorRateController`** (`@RestController`, `/admin/route-error-rate`):
+  - `GET /admin/route-error-rate` — `{enabled, routeCount, routes{route → {60s, 300s, 900s → {total, errors, errorRatePct}}}}`, requires `ROLE_ADMIN`
+  - `POST /admin/route-error-rate/reset` — clears all route data
+
+### Tests added
+- **`RouteErrorRateControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 3 seeded calls (2 success + 1 error) produce correct 60s window stats, reset clears
+  - user role returns 403, `pathBucket` boundary conditions verified
+
+---
+
 ## [0.64.0] – 2026-08-24 — Phase 64: Extended Live Dashboard v3
 
 ### Changed
