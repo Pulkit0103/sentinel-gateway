@@ -15,6 +15,9 @@ sentinel:
   content-type-stats:
     enabled: true
 
+  user-agent-stats:
+    enabled: true
+
   method-stats:
     enabled: true
 

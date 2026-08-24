@@ -141,6 +141,9 @@ sentinel:
   content-type-stats:
     enabled: true   # track response Content-Type distribution (application/json, text/html, etc.)
 
+  user-agent-stats:
+    enabled: true   # track request User-Agent category distribution (browser, mobile, bot, service)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

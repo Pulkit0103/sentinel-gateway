@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.48.0] – 2026-08-24 — Phase 48: Request User-Agent Distribution
+
+### Added
+- **`UserAgentProperties`** (`@ConfigurationProperties(prefix="sentinel.user-agent-stats")`):
+  - `enabled` (default `true`)
+- **`UserAgentRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` per-category counters + `AtomicLong total`
+  - `categorise(userAgent)` — normalises raw User-Agent strings into five categories: `bot`, `mobile`, `browser`, `service`, `unknown`; bot detection runs first to avoid misclassifying Googlebot (which contains "Safari")
+  - `record(userAgent)`, `snapshot()` → `{total, categories}`, `reset()`
+- **`UserAgentFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 9`):
+  - Reads `User-Agent` request header at filter entry time (no `beforeCommit` needed)
+  - Skips `/actuator/**` and `/admin/**` to prevent self-recording of admin requests
+- **`UserAgentController`** (`@RestController`, `/admin/user-agent-stats`):
+  - `GET /admin/user-agent-stats` — `{enabled, total, categories}`, requires `ROLE_ADMIN`
+  - `POST /admin/user-agent-stats/reset` — clears all counters
+
+### Tests added
+- **`UserAgentControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded categories appear in snapshot, reset clears counters
+  - user role returns 403, `categorise()` utility unit test covering all five categories
+
+---
+
 ## [0.47.0] – 2026-08-24 — Phase 47: Response Content-Type Distribution
 
 ### Added
