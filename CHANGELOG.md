@@ -6,6 +6,24 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.55.0] – 2026-08-24 — Phase 55: Extended Live Operations Dashboard
+
+### Changed
+- **`LiveDashboardController`** (`/admin/dashboard`) extended with 9 new sections from Phases 46-54:
+  - `methods` — HTTP method distribution (total + per-method counts) from `MethodRegistry`
+  - `responseContentTypes` — response Content-Type distribution from `ContentTypeRegistry`
+  - `userAgents` — User-Agent category distribution (browser/mobile/bot/service) from `UserAgentRegistry`
+  - `topIps` — top-5 IP addresses by request count from `IpCounterRegistry`
+  - `clockSkew` — total checked vs skewed request counts from `ClockSkewRegistry`
+  - `headerAudit` — response header coverage percentage from `HeaderAuditRegistry`
+  - `acceptHeaders` — request Accept header distribution from `ProtocolStatsRegistry`
+  - `routeTraffic` — per-route 1m/5m/15m windowed counts from `RouteTrafficRegistry`
+  - `encodings` — Content-Encoding distribution from `EncodingStatsRegistry`
+- Constructor extended with 9 new registry dependencies (all autowired by Spring)
+- Existing 4 integration tests continue to pass (new keys don't break `containsKeys()` assertions)
+
+---
+
 ## [0.54.0] – 2026-08-24 — Phase 54: Request Content-Encoding Distribution
 
 ### Added

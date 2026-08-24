@@ -1,16 +1,25 @@
 package com.sentinelgateway.gateway.admin;
 
+import com.sentinelgateway.gateway.clockskew.ClockSkewRegistry;
 import com.sentinelgateway.gateway.concurrent.ConcurrentRequestRegistry;
+import com.sentinelgateway.gateway.contenttype.ContentTypeRegistry;
+import com.sentinelgateway.gateway.encodingstats.EncodingStatsRegistry;
 import com.sentinelgateway.gateway.errorrate.ErrorRateRegistry;
+import com.sentinelgateway.gateway.headeraudit.HeaderAuditRegistry;
 import com.sentinelgateway.gateway.health.HealthScoreService;
 import com.sentinelgateway.gateway.hopcount.HopCountRegistry;
+import com.sentinelgateway.gateway.ipcounter.IpCounterRegistry;
 import com.sentinelgateway.gateway.latency.LatencyRegistry;
+import com.sentinelgateway.gateway.methodstats.MethodRegistry;
+import com.sentinelgateway.gateway.protocolstats.ProtocolStatsRegistry;
 import com.sentinelgateway.gateway.requestsize.OversizedRequestRegistry;
 import com.sentinelgateway.gateway.responsesize.ResponseSizeRegistry;
+import com.sentinelgateway.gateway.routetraffic.RouteTrafficRegistry;
 import com.sentinelgateway.gateway.session.ActiveSessionRegistry;
 import com.sentinelgateway.gateway.slowrequest.SlowRequestRegistry;
 import com.sentinelgateway.gateway.statuscode.StatusCodeRegistry;
 import com.sentinelgateway.gateway.uptime.UptimeRegistry;
+import com.sentinelgateway.gateway.useragent.UserAgentRegistry;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,10 +30,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Aggregated live operations dashboard (Phase 45).
+ * Aggregated live operations dashboard (Phase 45, extended in Phase 55).
  *
- * Single endpoint combining health score, uptime, concurrency, error rates,
- * latency, slow requests, status codes, session count, and size metrics.
+ * Single endpoint combining all monitoring data from Phases 30-54.
  * Useful for operations dashboards and incident triage.
  */
 @RestController
@@ -43,6 +51,15 @@ public class LiveDashboardController {
     private final OversizedRequestRegistry oversizedRegistry;
     private final ResponseSizeRegistry responseSizeRegistry;
     private final HopCountRegistry hopCountRegistry;
+    private final MethodRegistry methodRegistry;
+    private final ContentTypeRegistry contentTypeRegistry;
+    private final UserAgentRegistry userAgentRegistry;
+    private final IpCounterRegistry ipCounterRegistry;
+    private final ClockSkewRegistry clockSkewRegistry;
+    private final HeaderAuditRegistry headerAuditRegistry;
+    private final ProtocolStatsRegistry acceptStatsRegistry;
+    private final RouteTrafficRegistry routeTrafficRegistry;
+    private final EncodingStatsRegistry encodingStatsRegistry;
 
     public LiveDashboardController(
             HealthScoreService healthScoreService,
@@ -55,7 +72,16 @@ public class LiveDashboardController {
             ActiveSessionRegistry sessionRegistry,
             OversizedRequestRegistry oversizedRegistry,
             ResponseSizeRegistry responseSizeRegistry,
-            HopCountRegistry hopCountRegistry) {
+            HopCountRegistry hopCountRegistry,
+            MethodRegistry methodRegistry,
+            ContentTypeRegistry contentTypeRegistry,
+            UserAgentRegistry userAgentRegistry,
+            IpCounterRegistry ipCounterRegistry,
+            ClockSkewRegistry clockSkewRegistry,
+            HeaderAuditRegistry headerAuditRegistry,
+            ProtocolStatsRegistry acceptStatsRegistry,
+            RouteTrafficRegistry routeTrafficRegistry,
+            EncodingStatsRegistry encodingStatsRegistry) {
         this.healthScoreService = healthScoreService;
         this.uptimeRegistry = uptimeRegistry;
         this.concurrentRegistry = concurrentRegistry;
@@ -67,6 +93,15 @@ public class LiveDashboardController {
         this.oversizedRegistry = oversizedRegistry;
         this.responseSizeRegistry = responseSizeRegistry;
         this.hopCountRegistry = hopCountRegistry;
+        this.methodRegistry = methodRegistry;
+        this.contentTypeRegistry = contentTypeRegistry;
+        this.userAgentRegistry = userAgentRegistry;
+        this.ipCounterRegistry = ipCounterRegistry;
+        this.clockSkewRegistry = clockSkewRegistry;
+        this.headerAuditRegistry = headerAuditRegistry;
+        this.acceptStatsRegistry = acceptStatsRegistry;
+        this.routeTrafficRegistry = routeTrafficRegistry;
+        this.encodingStatsRegistry = encodingStatsRegistry;
     }
 
     @GetMapping
@@ -127,6 +162,41 @@ public class LiveDashboardController {
                 "totalProcessed", hops.get("totalProcessed"),
                 "totalRejected", hops.get("totalRejected")
         ));
+
+        // Phase 46: method distribution
+        Map<String, Object> methodSnap = methodRegistry.snapshot();
+        dashboard.put("methods", Map.of("total", methodSnap.get("total"), "distribution", methodSnap.get("methods")));
+
+        // Phase 47: response content-type distribution
+        Map<String, Object> ctSnap = contentTypeRegistry.snapshot();
+        dashboard.put("responseContentTypes", Map.of("total", ctSnap.get("total"), "types", ctSnap.get("types")));
+
+        // Phase 48: user-agent categories
+        Map<String, Object> uaSnap = userAgentRegistry.snapshot();
+        dashboard.put("userAgents", Map.of("total", uaSnap.get("total"), "categories", uaSnap.get("categories")));
+
+        // Phase 49: top-5 IPs
+        Map<String, Object> ipSnap = ipCounterRegistry.snapshot(5);
+        dashboard.put("topIps", Map.of("total", ipSnap.get("total"), "uniqueIps", ipSnap.get("uniqueIps"), "top5", ipSnap.get("topIps")));
+
+        // Phase 50: clock skew
+        Map<String, Object> skewSnap = clockSkewRegistry.snapshot();
+        dashboard.put("clockSkew", Map.of("totalChecked", skewSnap.get("totalChecked"), "totalSkewed", skewSnap.get("totalSkewed")));
+
+        // Phase 51: header audit
+        Map<String, Object> auditSnap = headerAuditRegistry.snapshot();
+        dashboard.put("headerAudit", Map.of("totalResponses", auditSnap.get("totalResponses"), "coveragePercent", auditSnap.get("coveragePercent")));
+
+        // Phase 52: accept header distribution
+        Map<String, Object> acceptSnap = acceptStatsRegistry.snapshot();
+        dashboard.put("acceptHeaders", Map.of("total", acceptSnap.get("total"), "types", acceptSnap.get("versions")));
+
+        // Phase 53: route windowed traffic
+        dashboard.put("routeTraffic", routeTrafficRegistry.snapshot());
+
+        // Phase 54: encoding distribution
+        Map<String, Object> encSnap = encodingStatsRegistry.snapshot();
+        dashboard.put("encodings", Map.of("total", encSnap.get("total"), "distribution", encSnap.get("encodings")));
 
         return dashboard;
     }
