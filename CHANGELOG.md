@@ -6,6 +6,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.42.0] – 2026-08-24 — Phase 42: Response Body Size Tracking
+
+### Added
+- **`ResponseSizeProperties`** (`@ConfigurationProperties(prefix="sentinel.response-size")`):
+  - `enabled` (default `true`), `maxRecords` (default `200`)
+- **`ResponseSizeRegistry`** (`@Component`):
+  - `LinkedBlockingDeque<Long>` ring-buffer for recent Content-Length samples
+  - `AtomicLong totalBytes`, `AtomicLong sampleCount` running totals (never reset by ring eviction)
+  - `record(bytes)`, `recentSamples()`, `getTotalBytes()`, `getSampleCount()`, `getAverageBytes()`, `reset()`
+- **`ResponseSizeFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 6`):
+  - Uses `beforeCommit` to read response `Content-Length` header before flush
+  - Skips `/actuator/**` and `/admin/**` (admin endpoint sizes not operationally meaningful)
+  - Silently skips responses without `Content-Length` (chunked streaming)
+- **`ResponseSizeController`** (`@RestController`, `/admin/response-sizes`):
+  - `GET /admin/response-sizes` — `{enabled, sampleCount, totalBytes, averageBytes, recentSamples}`, requires `ROLE_ADMIN`
+  - `POST /admin/response-sizes/reset` — clears all state
+
+### Tests added
+- **`ResponseSizeRegistryTest`** (5 unit tests):
+  - empty state, single record, multi-record average, ring-buffer eviction preserving running totals, reset
+- **`ResponseSizeControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded samples reported correctly, reset clears, user role returns 403
+
+---
+
 ## [0.41.0] – 2026-08-24 — Phase 41: Concurrent Request Monitor
 
 ### Added

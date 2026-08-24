@@ -138,6 +138,10 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  response-size:
+    enabled: true   # track response Content-Length distribution for bandwidth monitoring
+    max-records: 200  # ring-buffer depth for recent sample history
+
   concurrent-requests:
     enabled: true   # track in-flight request count, peak concurrency, and total completed
 

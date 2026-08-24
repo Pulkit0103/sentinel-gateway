@@ -12,6 +12,10 @@ sentinel:
   security-headers:
     enabled: true
 
+  response-size:
+    enabled: true
+    max-records: 50
+
   concurrent-requests:
     enabled: true
 
