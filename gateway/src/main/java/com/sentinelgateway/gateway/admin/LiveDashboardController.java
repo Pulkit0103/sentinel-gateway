@@ -11,10 +11,14 @@ import com.sentinelgateway.gateway.hopcount.HopCountRegistry;
 import com.sentinelgateway.gateway.ipcounter.IpCounterRegistry;
 import com.sentinelgateway.gateway.latency.LatencyRegistry;
 import com.sentinelgateway.gateway.methodstats.MethodRegistry;
+import com.sentinelgateway.gateway.pathdepth.PathDepthRegistry;
 import com.sentinelgateway.gateway.protocolstats.ProtocolStatsRegistry;
+import com.sentinelgateway.gateway.queryparam.QueryParamRegistry;
+import com.sentinelgateway.gateway.refererstat.RefererStatRegistry;
 import com.sentinelgateway.gateway.requestsize.OversizedRequestRegistry;
 import com.sentinelgateway.gateway.responsesize.ResponseSizeRegistry;
 import com.sentinelgateway.gateway.routetraffic.RouteTrafficRegistry;
+import com.sentinelgateway.gateway.schemestat.SchemeStatRegistry;
 import com.sentinelgateway.gateway.session.ActiveSessionRegistry;
 import com.sentinelgateway.gateway.slowrequest.SlowRequestRegistry;
 import com.sentinelgateway.gateway.statuscode.StatusCodeRegistry;
@@ -30,9 +34,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Aggregated live operations dashboard (Phase 45, extended in Phase 55).
+ * Aggregated live operations dashboard (Phase 45, extended in Phase 55 and 64).
  *
- * Single endpoint combining all monitoring data from Phases 30-54.
+ * Single endpoint combining all monitoring data from Phases 30-63.
  * Useful for operations dashboards and incident triage.
  */
 @RestController
@@ -60,6 +64,10 @@ public class LiveDashboardController {
     private final ProtocolStatsRegistry acceptStatsRegistry;
     private final RouteTrafficRegistry routeTrafficRegistry;
     private final EncodingStatsRegistry encodingStatsRegistry;
+    private final QueryParamRegistry queryParamRegistry;
+    private final SchemeStatRegistry schemeStatRegistry;
+    private final PathDepthRegistry pathDepthRegistry;
+    private final RefererStatRegistry refererStatRegistry;
 
     public LiveDashboardController(
             HealthScoreService healthScoreService,
@@ -81,7 +89,11 @@ public class LiveDashboardController {
             HeaderAuditRegistry headerAuditRegistry,
             ProtocolStatsRegistry acceptStatsRegistry,
             RouteTrafficRegistry routeTrafficRegistry,
-            EncodingStatsRegistry encodingStatsRegistry) {
+            EncodingStatsRegistry encodingStatsRegistry,
+            QueryParamRegistry queryParamRegistry,
+            SchemeStatRegistry schemeStatRegistry,
+            PathDepthRegistry pathDepthRegistry,
+            RefererStatRegistry refererStatRegistry) {
         this.healthScoreService = healthScoreService;
         this.uptimeRegistry = uptimeRegistry;
         this.concurrentRegistry = concurrentRegistry;
@@ -102,6 +114,10 @@ public class LiveDashboardController {
         this.acceptStatsRegistry = acceptStatsRegistry;
         this.routeTrafficRegistry = routeTrafficRegistry;
         this.encodingStatsRegistry = encodingStatsRegistry;
+        this.queryParamRegistry = queryParamRegistry;
+        this.schemeStatRegistry = schemeStatRegistry;
+        this.pathDepthRegistry = pathDepthRegistry;
+        this.refererStatRegistry = refererStatRegistry;
     }
 
     @GetMapping
@@ -197,6 +213,22 @@ public class LiveDashboardController {
         // Phase 54: encoding distribution
         Map<String, Object> encSnap = encodingStatsRegistry.snapshot();
         dashboard.put("encodings", Map.of("total", encSnap.get("total"), "distribution", encSnap.get("encodings")));
+
+        // Phase 60: query parameter count distribution
+        Map<String, Object> qpSnap = queryParamRegistry.snapshot();
+        dashboard.put("queryParams", Map.of("total", qpSnap.get("total"), "maxSeen", qpSnap.get("maxSeen"), "buckets", qpSnap.get("buckets")));
+
+        // Phase 61: request scheme distribution
+        Map<String, Object> schemeSnap = schemeStatRegistry.snapshot();
+        dashboard.put("schemes", Map.of("total", schemeSnap.get("total"), "distribution", schemeSnap.get("schemes")));
+
+        // Phase 62: path depth distribution
+        Map<String, Object> depthSnap = pathDepthRegistry.snapshot();
+        dashboard.put("pathDepth", Map.of("total", depthSnap.get("total"), "maxSeen", depthSnap.get("maxSeen"), "buckets", depthSnap.get("buckets")));
+
+        // Phase 63: referer domain top-5
+        Map<String, Object> refSnap = refererStatRegistry.snapshot(5);
+        dashboard.put("referers", Map.of("total", refSnap.get("total"), "top5", refSnap.get("topDomains")));
 
         return dashboard;
     }

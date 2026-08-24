@@ -6,6 +6,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.64.0] – 2026-08-24 — Phase 64: Extended Live Dashboard v3
+
+### Changed
+- **`LiveDashboardController`** extended with 4 new sections from Phases 60-63:
+  - `queryParams` — `{total, maxSeen, buckets}` from `QueryParamRegistry`
+  - `schemes` — `{total, distribution}` from `SchemeStatRegistry`
+  - `pathDepth` — `{total, maxSeen, buckets}` from `PathDepthRegistry`
+  - `referers` — `{total, top5}` from `RefererStatRegistry` (top-5 by request count)
+- Javadoc updated to reflect coverage of Phases 30-63
+
+---
+
 ## [0.63.0] – 2026-08-24 — Phase 63: Referer Domain Distribution
 
 ### Added
