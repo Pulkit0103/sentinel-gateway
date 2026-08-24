@@ -138,6 +138,9 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  concurrent-requests:
+    enabled: true   # track in-flight request count, peak concurrency, and total completed
+
   status-codes:
     enabled: true   # track HTTP response status code distribution (per-code and 2xx/3xx/4xx/5xx)
 

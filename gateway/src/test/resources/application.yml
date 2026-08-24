@@ -12,6 +12,9 @@ sentinel:
   security-headers:
     enabled: true
 
+  concurrent-requests:
+    enabled: true
+
   status-codes:
     enabled: true
 

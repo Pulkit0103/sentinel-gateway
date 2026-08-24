@@ -6,6 +6,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.41.0] – 2026-08-24 — Phase 41: Concurrent Request Monitor
+
+### Added
+- **`ConcurrentRequestProperties`** (`@ConfigurationProperties(prefix="sentinel.concurrent-requests")`):
+  - `enabled` (default `true`)
+- **`ConcurrentRequestRegistry`** (`@Component`):
+  - `AtomicInteger current` — tracks in-flight request count
+  - `AtomicInteger peak` — high-water mark updated via CAS spin-loop (thread-safe)
+  - `AtomicLong totalCompleted` — total requests that have finished
+  - `increment()`, `decrement()`, `resetPeak()` (resets peak to current and totalCompleted to 0)
+- **`ConcurrentRequestFilter`** (`WebFilter`, order `HIGHEST_PRECEDENCE + 1`):
+  - Increments before chain, decrements via `doFinally` after completion
+  - Skips `/actuator/**` health probe traffic
+- **`ConcurrentRequestController`** (`@RestController`, `/admin/concurrent-requests`):
+  - `GET /admin/concurrent-requests` — `{enabled, current, peak, totalCompleted}`, requires `ROLE_ADMIN`
+  - `POST /admin/concurrent-requests/reset-peak` — resets peak and total counter
+
+### Tests added
+- **`ConcurrentRequestRegistryTest`** (6 unit tests):
+  - initial state, increment, decrement + totalCompleted, peak high-water mark
+  - resetPeak, concurrent increments don't under-count peak
+- **`ConcurrentRequestControllerTest`** (4 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, non-negative values, resetPeak response, user role returns 403
+
+---
+
 ## [0.40.0] – 2026-08-24 — Phase 40: Response Status Code Distribution
 
 ### Added
