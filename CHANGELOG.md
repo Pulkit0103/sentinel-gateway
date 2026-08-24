@@ -6,6 +6,26 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.36.0] – 2026-08-24 — Phase 36: JWT Expiry Warning
+
+### Added
+- **`JwtExpiryProperties`** (`@ConfigurationProperties(prefix="sentinel.jwt-expiry-warning")`):
+  - `enabled` (default `true`), `warningWindowSeconds` (default `300`), `headerName` (default `X-JWT-Expires-In`)
+- **`JwtExpiryFilter`** (`WebFilter`, order `1`):
+  - Uses `exchange.getResponse().beforeCommit(...)` to read `ReactiveSecurityContextHolder` and set header before response flushes
+  - Adds `{headerName}: {secondsRemaining}` to response when JWT `exp` is within `warningWindowSeconds` of now
+  - Skips non-JWT requests silently
+
+### Tests added
+- **`JwtExpiryFilterTest`** (5 integration tests, `@SpringBootTest RANDOM_PORT`):
+  - JWT expiring in 60s (< 300s window) → header added
+  - JWT expiring in 3600s (> 300s window) → header absent
+  - Filter disabled → no header even for soon-expiring JWT
+  - Custom header name → custom header appears in response
+  - JWT at exact boundary (300s) → header added (≤ comparison)
+
+---
+
 ## [0.35.0] – 2026-08-24 — Phase 35: Error Rate Tracking
 
 ### Added

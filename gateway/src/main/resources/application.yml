@@ -138,6 +138,11 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  jwt-expiry-warning:
+    enabled: true              # add X-JWT-Expires-In header when JWT is expiring soon
+    warning-window-seconds: 300  # warn when JWT expires within this many seconds
+    header-name: X-JWT-Expires-In  # response header name for the expiry warning
+
   ip-access:
     enabled: false  # set to true to enable IP-based access control
     mode: DENYLIST  # DENYLIST (block listed IPs) or ALLOWLIST (only allow listed IPs)

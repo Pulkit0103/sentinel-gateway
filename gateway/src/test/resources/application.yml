@@ -12,6 +12,11 @@ sentinel:
   security-headers:
     enabled: true
 
+  jwt-expiry-warning:
+    enabled: true
+    warning-window-seconds: 300
+    header-name: X-JWT-Expires-In
+
   ip-access:
     enabled: false
 
