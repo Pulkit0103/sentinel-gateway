@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.54.0] – 2026-08-24 — Phase 54: Request Content-Encoding Distribution
+
+### Added
+- **`EncodingStatsProperties`** (`@ConfigurationProperties(prefix="sentinel.encoding-stats")`):
+  - `enabled` (default `true`)
+- **`EncodingStatsRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` per-encoding counters + `AtomicLong total`
+  - `record(encoding)` — normalises by trimming and lowercasing; stores `"none"` when header is absent
+  - `snapshot()` → `{total, encodings}` sorted alphabetically, `reset()`, `getTotal()`
+- **`EncodingStatsFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 15`):
+  - Reads `Content-Encoding` request header at filter entry time
+  - Skips `/actuator/**` and `/admin/**`
+- **`EncodingStatsController`** (`@RestController`, `/admin/encoding-stats`):
+  - `GET /admin/encoding-stats` — `{enabled, total, encodings}`, requires `ROLE_ADMIN`
+  - `POST /admin/encoding-stats/reset` — clears all counters
+
+### Tests added
+- **`EncodingStatsControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded encodings normalised and aggregated (GZIP+gzip→gzip=2), reset clears counters
+  - user role returns 403, null/blank stored as `"none"`
+
+---
+
 ## [0.53.0] – 2026-08-24 — Phase 53: Per-Route Windowed Traffic Counter
 
 ### Added

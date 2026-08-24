@@ -44,6 +44,9 @@ sentinel:
   route-traffic:
     enabled: true
 
+  encoding-stats:
+    enabled: true
+
   method-stats:
     enabled: true
 

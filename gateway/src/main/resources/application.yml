@@ -170,6 +170,9 @@ sentinel:
   route-traffic:
     enabled: true   # track per-route request counts within 1-min, 5-min, 15-min sliding windows
 
+  encoding-stats:
+    enabled: true   # track request Content-Encoding distribution (gzip, br, deflate, none)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 
