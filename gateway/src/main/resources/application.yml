@@ -192,6 +192,9 @@ sentinel:
   scheme-stats:
     enabled: true   # track request URI scheme distribution (http, https)
 
+  path-depth:
+    enabled: true   # track URL path-depth distribution (root/shallow/moderate/deep segments)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

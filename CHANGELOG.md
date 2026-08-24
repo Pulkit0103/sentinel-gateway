@@ -6,6 +6,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.62.0] – 2026-08-24 — Phase 62: URL Path-Depth Distribution
+
+### Added
+- **`PathDepthProperties`** (`@ConfigurationProperties(prefix="sentinel.path-depth")`):
+  - `enabled` (default `true`)
+- **`PathDepthRegistry`** (`@Component`):
+  - Fixed buckets: `root` (0 segments), `shallow` (1-2), `moderate` (3-4), `deep` (5+)
+  - `AtomicLong maxSeen` — CAS spin-loop tracks the deepest path ever seen
+  - `countSegments(path)` — counts non-empty path segments (e.g. `/api/users/123` → 3)
+  - `record(depth)`, `snapshot()` → `{total, maxSeen, buckets}`, `reset()`
+- **`PathDepthFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 22`):
+  - Counts non-empty segments of the request path at filter entry
+  - Skips `/actuator/**` and `/admin/**`
+- **`PathDepthController`** (`@RestController`, `/admin/path-depth-stats`):
+  - `GET /admin/path-depth-stats` — `{enabled, total, maxSeen, buckets}`, requires `ROLE_ADMIN`
+  - `POST /admin/path-depth-stats/reset` — clears all counters and maxSeen
+
+### Tests added
+- **`PathDepthControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, 5 seeded depths bucketed correctly + maxSeen=6 tracked, reset clears counters+max
+  - user role returns 403, `countSegments` and `classify` boundary conditions verified
+
+---
+
 ## [0.61.0] – 2026-08-24 — Phase 61: Request URI Scheme Distribution
 
 ### Added

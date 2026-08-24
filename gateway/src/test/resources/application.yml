@@ -66,6 +66,9 @@ sentinel:
   scheme-stats:
     enabled: true
 
+  path-depth:
+    enabled: true
+
   method-stats:
     enabled: true
 
