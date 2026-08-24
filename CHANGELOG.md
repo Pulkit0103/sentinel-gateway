@@ -6,6 +6,38 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.14.0] – 2026-08-24 — Phase 14: Tenant-Scoped Rate Limiting + Policy Admin API
+
+### Added
+- **`RateLimitPolicyController`** (`@RestController`, `/admin/rate-limit`):
+  - `GET /admin/rate-limit/policies` — returns the active `sentinel.rate-limit.policies` map as JSON,
+    allowing operators to inspect current rate limit tiers (ANONYMOUS, USER, PREMIUM, DEFAULT)
+    without restarting or reading config files directly
+  - Protected by existing `SecurityWebFilterChain` ADMIN role requirement for `/admin/**`
+- **`TenantRateLimitProperties`** (`@Component`, `@ConfigurationProperties("sentinel.tenant-rate-limit")`):
+  - `enabled: boolean` (default `false`) — master switch for per-tenant overrides
+  - `tenants: Map<String, TenantPolicy>` — maps tenant ID (from `X-Tenant-Id` header) to a
+    `TenantPolicy` with `requestsPerMinute: int` (default 1000)
+  - Placeholder for future filter integration; available for injection wherever tenant-specific
+    limits are needed
+  - Document tenant override config via `sentinel.tenant-rate-limit.tenants.<tenantId>.requests-per-minute`
+- `sentinel.tenant-rate-limit.enabled: false` block added to `application.yml` (main) with
+  commented-out example tenant entries
+
+### Tests added
+- **`RateLimitPolicyControllerTest`** (2 tests):
+  - `getPolicies_returnsConfiguredPolicies` — admin JWT → 200, body contains `ANONYMOUS` and `DEFAULT`
+    keys with correct `requestsPerMinute` values from test `application.yml`
+  - `getPolicies_requiresAuthentication_returns401` — no auth → 401
+- **`TenantRateLimitPropertiesTest`** (4 tests):
+  - `defaults_enabledIsFalse` — fresh instance has `enabled=false`
+  - `defaults_tenantsMapIsEmpty` — fresh instance has empty (non-null) tenants map
+  - `setEnabled_updatesFlag` — mutator round-trip
+  - `setTenants_storesTenantPolicies` — stores tenant policy and reads back correctly
+  - `tenantPolicy_defaultRequestsPerMinute_is1000` — `TenantPolicy` defaults to 1000 RPM
+
+---
+
 ## [0.13.0] – 2026-08-24 — Phase 13: Admin Dashboard — Gateway Health Aggregation
 
 ### Added

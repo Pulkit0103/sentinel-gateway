@@ -199,6 +199,14 @@ sentinel:
         requests-per-minute: 10000
       DEFAULT:
         requests-per-minute: 1000
+
+  tenant-rate-limit:
+    enabled: false  # set to true to activate per-tenant rate limit overrides
+    # tenants:
+    #   acme-corp:
+    #     requests-per-minute: 5000
+    #   trial-tenant:
+    #     requests-per-minute: 50
   security:
     jwt:
       # Token issuer validated against every incoming JWT's `iss` claim.
