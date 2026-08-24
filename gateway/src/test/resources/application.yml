@@ -12,6 +12,9 @@ sentinel:
   security-headers:
     enabled: true
 
+  content-type-stats:
+    enabled: true
+
   method-stats:
     enabled: true
 

@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.47.0] – 2026-08-24 — Phase 47: Response Content-Type Distribution
+
+### Added
+- **`ContentTypeProperties`** (`@ConfigurationProperties(prefix="sentinel.content-type-stats")`):
+  - `enabled` (default `true`)
+- **`ContentTypeRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` per-type counters + `AtomicLong total`
+  - `normalise(contentType)` — strips parameters and lowercases (e.g. `"application/json;charset=UTF-8"` → `"application/json"`)
+  - `record(contentType)`, `snapshot()` → `{total, types}`, `reset()`
+- **`ContentTypeFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 8`):
+  - Uses `beforeCommit` to read response `Content-Type` before flush
+  - Skips `/actuator/**` and `/admin/**`; records `null` as `"unknown"`
+- **`ContentTypeController`** (`@RestController`, `/admin/content-type-stats`):
+  - `GET /admin/content-type-stats` — `{enabled, total, types}`, requires `ROLE_ADMIN`
+  - `POST /admin/content-type-stats/reset` — clears all counters
+
+### Tests added
+- **`ContentTypeControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded types normalised + aggregated correctly, reset clears
+  - user role returns 403, `normalise()` utility unit test
+
+---
+
 ## [0.46.0] – 2026-08-24 — Phase 46: HTTP Method Distribution Tracker
 
 ### Added

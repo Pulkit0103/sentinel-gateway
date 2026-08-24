@@ -138,6 +138,9 @@ sentinel:
     #   X-XSS-Protection: "0"                   # default
     #   Permissions-Policy: "geolocation=()"    # optional addition
 
+  content-type-stats:
+    enabled: true   # track response Content-Type distribution (application/json, text/html, etc.)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 
