@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.52.0] – 2026-08-24 — Phase 52: Request Accept Header Distribution
+
+### Added
+- **`ProtocolStatsProperties`** (`@ConfigurationProperties(prefix="sentinel.accept-stats")`):
+  - `enabled` (default `true`)
+- **`ProtocolStatsRegistry`** (`@Component`):
+  - `ConcurrentHashMap<String, AtomicLong>` per-Accept-type counters + `AtomicLong total`
+  - `record(accept)`, `snapshot()` → `{total, versions}`, `reset()`, `getTotal()`
+- **`ProtocolStatsFilter`** (`WebFilter`, order `LOWEST_PRECEDENCE - 13`):
+  - Reads the primary `Accept` media type from each request; normalises by stripping quality parameters (e.g. `"application/json;q=0.9"` → `"application/json"`) and lowercasing
+  - Records `"not-set"` when the header is absent
+  - Skips `/actuator/**` and `/admin/**`
+- **`ProtocolStatsController`** (`@RestController`, `/admin/protocol-stats`):
+  - `GET /admin/protocol-stats` — `{enabled, total, versions}`, requires `ROLE_ADMIN`
+  - `POST /admin/protocol-stats/reset` — clears all counters
+
+### Tests added
+- **`ProtocolStatsControllerTest`** (5 tests combining unit + integration, `@SpringBootTest RANDOM_PORT`):
+  - expected fields, seeded Accept values normalised correctly, reset clears counters
+  - user role returns 403, `normalise()` utility unit test
+
+---
+
 ## [0.51.0] – 2026-08-24 — Phase 51: Response Header Audit
 
 ### Added

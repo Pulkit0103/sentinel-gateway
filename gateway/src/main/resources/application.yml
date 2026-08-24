@@ -164,6 +164,9 @@ sentinel:
       - Cache-Control
       - Referrer-Policy
 
+  accept-stats:
+    enabled: true   # track request Accept header distribution (application/json, text/html, etc.)
+
   method-stats:
     enabled: true   # track request count distribution by HTTP method (GET, POST, PUT, DELETE, etc.)
 

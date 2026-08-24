@@ -38,6 +38,9 @@ sentinel:
       - Cache-Control
       - Referrer-Policy
 
+  accept-stats:
+    enabled: true
+
   method-stats:
     enabled: true
 
